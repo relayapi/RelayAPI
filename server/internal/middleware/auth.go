@@ -3,6 +3,7 @@ package middleware
 import (
 	"encoding/base64"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"relayapi/server/internal/config"
@@ -35,12 +36,18 @@ func TokenAuth(cfg *config.Config) gin.HandlerFunc {
 			return
 		}
 
-		// Base64 解码令牌
-		tokenBytes, err := base64.StdEncoding.DecodeString(encryptedToken)
+		// 添加回 base64 padding
+		if padding := len(encryptedToken) % 4; padding > 0 {
+			encryptedToken += strings.Repeat("=", 4-padding)
+		}
+
+		// Base64 URL 安全解码
+		tokenBytes, err := base64.URLEncoding.DecodeString(encryptedToken)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"error": "Invalid token format",
-				"message": "Token must be base64 encoded",
+				"message": "Token must be base64url encoded",
+				"details": err.Error(),
 			})
 			c.Abort()
 			return
@@ -52,6 +59,7 @@ func TokenAuth(cfg *config.Config) gin.HandlerFunc {
 			c.JSON(http.StatusUnauthorized, gin.H{
 				"error": "Invalid token",
 				"message": "Failed to decrypt token",
+				"details": err.Error(),
 			})
 			c.Abort()
 			return
@@ -63,6 +71,7 @@ func TokenAuth(cfg *config.Config) gin.HandlerFunc {
 			c.JSON(http.StatusUnauthorized, gin.H{
 				"error": "Invalid token",
 				"message": "Failed to parse token data",
+				"details": err.Error(),
 			})
 			c.Abort()
 			return
