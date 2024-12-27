@@ -10,7 +10,11 @@
     "dbname": "relayapi"
   },
   "crypto": {
+    "method": "aes",
+    "key_size": 256,
     "private_key_path": "keys/private.pem",
-    "public_key_path": "keys/public.pem"
+    "public_key_path": "keys/public.pem",
+    "aes_key": "",
+    "aes_iv_seed": ""
   }
 } 

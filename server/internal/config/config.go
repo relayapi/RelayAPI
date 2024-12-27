@@ -18,8 +18,12 @@ type Config struct {
 		DBName   string `json:"dbname"`
 	} `json:"database"`
 	Crypto struct {
-		PrivateKeyPath string `json:"private_key_path"`
-		PublicKeyPath  string `json:"public_key_path"`
+		Method         string `json:"method"`          // 加密方式：aes, ecc
+		KeySize        int    `json:"key_size"`        // AES密钥长度：128, 192, 256
+		PrivateKeyPath string `json:"private_key_path"` // ECC私钥路径
+		PublicKeyPath  string `json:"public_key_path"`  // ECC公钥路径
+		AESKey         string `json:"aes_key"`          // AES密钥（可选，如果不提供则自动生成）
+		AESIVSeed     string `json:"aes_iv_seed"`      // AES IV种子（可选，用于生成IV）
 	} `json:"crypto"`
 }
 
@@ -43,11 +47,19 @@ var defaultConfig = Config{
 		DBName:   "relayapi",
 	},
 	Crypto: struct {
+		Method         string `json:"method"`
+		KeySize        int    `json:"key_size"`
 		PrivateKeyPath string `json:"private_key_path"`
 		PublicKeyPath  string `json:"public_key_path"`
+		AESKey         string `json:"aes_key"`
+		AESIVSeed     string `json:"aes_iv_seed"`
 	}{
+		Method:         "aes",
+		KeySize:        256,
 		PrivateKeyPath: "keys/private.pem",
 		PublicKeyPath:  "keys/public.pem",
+		AESKey:         "",
+		AESIVSeed:     "",
 	},
 }
 
