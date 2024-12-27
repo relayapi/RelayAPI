@@ -7,6 +7,7 @@
 ```bash
 # 设置 Go 环境
 export GOROOT=/usr/local/go
+go mod download && go mod tidy
 
 # 编译
 cd server

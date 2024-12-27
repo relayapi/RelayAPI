@@ -34,3 +34,4 @@ Thumbs.db
 # 编译目录
 /bin/
 /dist/ 
+server/bin/relayapi-server
