@@ -34,7 +34,7 @@ func main() {
 
 	// API 代理路由组
 	apiGroup := r.Group("/api")
-	apiGroup.Use(middleware.TokenAuth())
+	apiGroup.Use(middleware.TokenAuth(cfg))
 	apiGroup.Use(middleware.RateLimit())
 	{
 		// OpenAI API 代理

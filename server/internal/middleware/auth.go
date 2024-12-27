@@ -1,22 +1,32 @@
 package middleware
 
 import (
+	"encoding/base64"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"relayapi/server/internal/config"
+	"relayapi/server/internal/crypto"
+	"relayapi/server/internal/models"
 )
 
 // TokenAuth 验证访问令牌的中间件
-func TokenAuth() gin.HandlerFunc {
+func TokenAuth(cfg *config.Config) gin.HandlerFunc {
+	// 创建加密器
+	encryptor, err := crypto.NewEncryptor(cfg)
+	if err != nil {
+		panic(err)
+	}
+
 	return func(c *gin.Context) {
 		// 从 URL 参数中获取令牌
-		token := c.Query("token")
-		if token == "" {
+		encryptedToken := c.Query("token")
+		if encryptedToken == "" {
 			// 尝试从 URL 路径中获取令牌（兼容某些 API 的路径格式）
-			token = c.Param("token")
+			encryptedToken = c.Param("token")
 		}
 
-		if token == "" {
+		if encryptedToken == "" {
 			c.JSON(http.StatusUnauthorized, gin.H{
 				"error": "Missing API token",
 				"message": "Please provide your API token as a URL parameter: ?token=your_token",
@@ -25,13 +35,57 @@ func TokenAuth() gin.HandlerFunc {
 			return
 		}
 
-		// 将令牌存储在上下文中，供后续处理器使用
-		c.Set("api_token", token)
+		// Base64 解码令牌
+		tokenBytes, err := base64.StdEncoding.DecodeString(encryptedToken)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": "Invalid token format",
+				"message": "Token must be base64 encoded",
+			})
+			c.Abort()
+			return
+		}
 
-		// TODO: 验证令牌
-		// 1. 从数据库获取令牌信息
-		// 2. 验证令牌有效性
-		// 3. 更新令牌使用次数
+		// 解密令牌
+		decryptedBytes, err := encryptor.Decrypt(tokenBytes)
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"error": "Invalid token",
+				"message": "Failed to decrypt token",
+			})
+			c.Abort()
+			return
+		}
+
+		// 反序列化令牌
+		token := &models.Token{}
+		if err := token.Deserialize(decryptedBytes); err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"error": "Invalid token",
+				"message": "Failed to parse token data",
+			})
+			c.Abort()
+			return
+		}
+
+		// 验证令牌有效性
+		if !token.IsValid() {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"error": "Token expired or exceeded usage limit",
+				"message": "Please obtain a new token",
+			})
+			c.Abort()
+			return
+		}
+
+		// 增加使用次数
+		token.IncrementUsage()
+
+		// TODO: 更新数据库中的令牌使用次数
+
+		// 将令牌和 API Key 存储在上下文中
+		c.Set("token", token)
+		c.Set("api_token", token.APIKey)
 
 		c.Next()
 	}
