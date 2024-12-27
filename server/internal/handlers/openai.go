@@ -48,10 +48,19 @@ func (h *OpenAIHandler) HandleRequest(c *gin.Context) {
 	// 构建目标 URL
 	targetURL := OpenAIBaseURL + path
 
+	// 从上下文中获取令牌
+	token, exists := c.Get("api_token")
+	if !exists {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "API token not found in context",
+		})
+		return
+	}
+
 	// 转发请求
 	headers := map[string]string{
 		"Content-Type":  "application/json",
-		"Authorization": c.GetHeader("Authorization"),
+		"Authorization": fmt.Sprintf("Bearer %s", token),
 	}
 
 	resp, err := h.proxyService.ProxyRequest(c.Request.Method, targetURL, headers, body)

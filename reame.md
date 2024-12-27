@@ -2,7 +2,7 @@
 ```markdown:README.md
 # RelayAPI
 
-RelayAPI 是一个安全的 API 代理层，专门用于解决前端调用需要 API Key 的服务（如 OpenAI）时的安全问题。通过非对称加密和访问控制，实现安全可控的 API 调用。
+RelayAPI 是一个安全的 API 代理层，专门用于解决前端调用需要 API Key 的服务（如 OpenAI）时的安全问题。通过多种加密方式和访问控制，实现安全可控的 API 调用，支持多种语言的 SDK ，前端可直接使用各 AI 厂商的标准 API ，仅修改 BaseURL, 无需改动任何代码。
 
 ## 特性
 
