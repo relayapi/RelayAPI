@@ -7,12 +7,10 @@ import (
 // Token 表示访问令牌
 type Token struct {
 	ID           string    `json:"id"`
-	EncryptedKey string    `json:"encrypted_key"`
+	APIKey       string    `json:"api_key"`
 	MaxCalls     int       `json:"max_calls"`
-	UsedCalls    int       `json:"used_calls"`
 	ExpireTime   time.Time `json:"expire_time"`
-	CreatedAt    time.Time `json:"created_at"`
-	UpdatedAt    time.Time `json:"updated_at"`
+	ExtInfo      string    `json:"ext_info"`
 }
 
 // IsValid 检查令牌是否有效
@@ -29,14 +27,3 @@ func (t *Token) IsValid() bool {
 
 	return true
 }
-
-// IncrementUsage 增加令牌使用次数
-func (t *Token) IncrementUsage() {
-	t.UsedCalls++
-	t.UpdatedAt = time.Now()
-}
-
-// RemainingCalls 获取剩余调用次数
-func (t *Token) RemainingCalls() int {
-	return t.MaxCalls - t.UsedCalls
-} 
