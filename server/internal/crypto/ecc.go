@@ -1,10 +1,11 @@
 package crypto
 
 import (
+	"crypto/aes"
+	"crypto/cipher"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
-	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
 	"math/big"
@@ -31,40 +32,62 @@ func GenerateKeyPair() (*KeyPair, error) {
 
 // Encrypt 使用公钥加密数据
 func (kp *KeyPair) Encrypt(data []byte) ([]byte, error) {
-	// 使用 ECDSA 进行加密
-	r, s, err := ecdsa.Sign(rand.Reader, kp.PrivateKey, data)
-	if err != nil {
-		return nil, fmt.Errorf("failed to encrypt data: %v", err)
+	// 生成一个随机的 AES 密钥
+	aesKey := make([]byte, 32)
+	if _, err := rand.Read(aesKey); err != nil {
+		return nil, fmt.Errorf("failed to generate AES key: %v", err)
 	}
 
-	// 将签名转换为字节数组
-	signature := append(r.Bytes(), s.Bytes()...)
-	return []byte(base64.StdEncoding.EncodeToString(signature)), nil
+	// 使用 AES 加密数据
+	block, err := aes.NewCipher(aesKey)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create AES cipher: %v", err)
+	}
+
+	// 生成随机 IV
+	iv := make([]byte, aes.BlockSize)
+	if _, err := rand.Read(iv); err != nil {
+		return nil, fmt.Errorf("failed to generate IV: %v", err)
+	}
+
+	// 加密数据
+	ciphertext := make([]byte, len(data))
+	stream := cipher.NewCFBEncrypter(block, iv)
+	stream.XORKeyStream(ciphertext, data)
+
+	// 组合所有数据：IV + AES密钥 + 加密数据
+	result := append(iv, aesKey...)
+	result = append(result, ciphertext...)
+
+	return []byte(base64.StdEncoding.EncodeToString(result)), nil
 }
 
 // Decrypt 使用私钥解密数据
 func (kp *KeyPair) Decrypt(encryptedData []byte) ([]byte, error) {
 	// 解码 base64
-	signature, err := base64.StdEncoding.DecodeString(string(encryptedData))
+	data, err := base64.StdEncoding.DecodeString(string(encryptedData))
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode base64: %v", err)
 	}
 
-	// 分离 r 和 s
-	rBytes := signature[:len(signature)/2]
-	sBytes := signature[len(signature)/2:]
+	// 提取 IV
+	iv := data[:aes.BlockSize]
+	// 提取 AES 密钥
+	aesKey := data[aes.BlockSize : aes.BlockSize+32]
+	// 提取加密数据
+	ciphertext := data[aes.BlockSize+32:]
 
-	r := new(big.Int).SetBytes(rBytes)
-	s := new(big.Int).SetBytes(sBytes)
-
-	// 验证签名
-	hash := sha256.Sum256(encryptedData)
-	valid := ecdsa.Verify(kp.PublicKey, hash[:], r, s)
-	if !valid {
-		return nil, fmt.Errorf("invalid signature")
+	// 解密数据
+	plaintext := make([]byte, len(ciphertext))
+	block, err := aes.NewCipher(aesKey)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create AES cipher: %v", err)
 	}
 
-	return encryptedData, nil
+	stream := cipher.NewCFBDecrypter(block, iv)
+	stream.XORKeyStream(plaintext, ciphertext)
+
+	return plaintext, nil
 }
 
 // ExportPublicKey 导出公钥为 base64 字符串
