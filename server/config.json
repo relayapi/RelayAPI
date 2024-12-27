@@ -1,0 +1,16 @@
+{
+  "server": {
+    "port": 8080
+  },
+  "database": {
+    "host": "localhost",
+    "port": 5432,
+    "user": "postgres",
+    "password": "",
+    "dbname": "relayapi"
+  },
+  "crypto": {
+    "private_key_path": "keys/private.pem",
+    "public_key_path": "keys/public.pem"
+  }
+} 
