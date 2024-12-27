@@ -14,7 +14,7 @@
     "key_size": 256,
     "private_key_path": "keys/private.pem",
     "public_key_path": "keys/public.pem",
-    "aes_key": "",
-    "aes_iv_seed": ""
+    "aes_key": "7b8a9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b",
+    "aes_iv_seed": "1234567890123456"
   }
 } 
