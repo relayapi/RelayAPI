@@ -3,120 +3,106 @@ package crypto
 import (
 	"crypto/aes"
 	"crypto/cipher"
-	"crypto/rand"
-	"crypto/sha256"
-	"encoding/base64"
 	"fmt"
-	"relayapi/server/internal/config"
 )
 
-// AESEncryptor 实现 AES 加密
 type AESEncryptor struct {
 	key    []byte
 	ivSeed []byte
 }
 
-// NewAESEncryptor 创建 AES 加密器
-func NewAESEncryptor(cfg *config.Config) (*AESEncryptor, error) {
-	var key []byte
-	if cfg.Crypto.AESKey != "" {
-		// 使用配置的密钥
-		key = []byte(cfg.Crypto.AESKey)
-	} else {
-		// 生成随机密钥
-		key = make([]byte, cfg.Crypto.KeySize/8)
-		if _, err := rand.Read(key); err != nil {
-			return nil, fmt.Errorf("failed to generate AES key: %v", err)
-		}
+func NewAESEncryptor(key []byte, ivSeed []byte) (*AESEncryptor, error) {
+	if len(key) != 32 {
+		return nil, fmt.Errorf("AES key must be 32 bytes (256 bits)")
 	}
-
-	var ivSeed []byte
-	if cfg.Crypto.AESIVSeed != "" {
-		// 使用配置的 IV 种子
-		ivSeed = []byte(cfg.Crypto.AESIVSeed)
-	} else {
-		// 生成随机 IV 种子
-		ivSeed = make([]byte, aes.BlockSize)
-		if _, err := rand.Read(ivSeed); err != nil {
-			return nil, fmt.Errorf("failed to generate IV seed: %v", err)
-		}
+	if len(ivSeed) != aes.BlockSize {
+		return nil, fmt.Errorf("IV seed must be %d bytes", aes.BlockSize)
 	}
-
-	// 确保密钥长度正确
-	if len(key) != cfg.Crypto.KeySize/8 {
-		// 使用 SHA-256 调整密钥长度
-		hash := sha256.Sum256(key)
-		key = hash[:cfg.Crypto.KeySize/8]
-	}
-
 	return &AESEncryptor{
 		key:    key,
 		ivSeed: ivSeed,
 	}, nil
 }
 
-// generateIV 生成 IV
-func (e *AESEncryptor) generateIV() ([]byte, error) {
-	iv := make([]byte, aes.BlockSize)
-	if _, err := rand.Read(iv); err != nil {
-		return nil, fmt.Errorf("failed to generate IV: %v", err)
-	}
-	// 使用 IV 种子进行混合
-	for i := 0; i < len(iv); i++ {
-		iv[i] ^= e.ivSeed[i]
-	}
-	return iv, nil
-}
-
-// Encrypt 加密数据
 func (e *AESEncryptor) Encrypt(data []byte) ([]byte, error) {
-	// 创建 cipher
 	block, err := aes.NewCipher(e.key)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create AES cipher: %v", err)
 	}
 
-	// 生成 IV
-	iv, err := e.generateIV()
-	if err != nil {
-		return nil, err
-	}
+	// 使用 CBC 模式
+	mode := cipher.NewCBCEncrypter(block, e.ivSeed)
+
+	// 填充数据
+	paddedData := pkcs7Padding(data, aes.BlockSize)
 
 	// 加密数据
-	ciphertext := make([]byte, len(data))
-	stream := cipher.NewCFBEncrypter(block, iv)
-	stream.XORKeyStream(ciphertext, data)
+	ciphertext := make([]byte, len(paddedData))
+	mode.CryptBlocks(ciphertext, paddedData)
 
-	// 组合 IV 和加密数据
-	result := append(iv, ciphertext...)
-	return []byte(base64.StdEncoding.EncodeToString(result)), nil
+	return ciphertext, nil
 }
 
-// Decrypt 解密数据
-func (e *AESEncryptor) Decrypt(encryptedData []byte) ([]byte, error) {
-	// 解码 base64
-	data, err := base64.StdEncoding.DecodeString(string(encryptedData))
-	if err != nil {
-		return nil, fmt.Errorf("failed to decode base64: %v", err)
+func (e *AESEncryptor) Decrypt(data []byte) ([]byte, error) {
+	// 检查数据长度
+	if len(data) < aes.BlockSize {
+		return nil, fmt.Errorf("ciphertext too short")
 	}
 
-	// 提取 IV
-	if len(data) < aes.BlockSize {
-		return nil, fmt.Errorf("encrypted data too short")
-	}
+	// 提取 IV（前 16 字节）
 	iv := data[:aes.BlockSize]
 	ciphertext := data[aes.BlockSize:]
 
-	// 创建 cipher
+	// 创建解密器
 	block, err := aes.NewCipher(e.key)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create AES cipher: %v", err)
 	}
 
+	// 使用 CBC 模式
+	mode := cipher.NewCBCDecrypter(block, iv)
+
 	// 解密数据
 	plaintext := make([]byte, len(ciphertext))
-	stream := cipher.NewCFBDecrypter(block, iv)
-	stream.XORKeyStream(plaintext, ciphertext)
+	mode.CryptBlocks(plaintext, ciphertext)
 
-	return plaintext, nil
+	// 去除填充
+	unpaddedData, err := pkcs7Unpadding(plaintext)
+	if err != nil {
+		return nil, fmt.Errorf("failed to remove padding: %v", err)
+	}
+
+	return unpaddedData, nil
+}
+
+// PKCS7 填充
+func pkcs7Padding(data []byte, blockSize int) []byte {
+	padding := blockSize - len(data)%blockSize
+	padtext := make([]byte, padding)
+	for i := range padtext {
+		padtext[i] = byte(padding)
+	}
+	return append(data, padtext...)
+}
+
+// PKCS7 去除填充
+func pkcs7Unpadding(data []byte) ([]byte, error) {
+	length := len(data)
+	if length == 0 {
+		return nil, fmt.Errorf("empty data")
+	}
+	
+	padding := int(data[length-1])
+	if padding > length {
+		return nil, fmt.Errorf("invalid padding size")
+	}
+	
+	// 验证所有填充字节
+	for i := length - padding; i < length; i++ {
+		if data[i] != byte(padding) {
+			return nil, fmt.Errorf("invalid padding")
+		}
+	}
+	
+	return data[:length-padding], nil
 } 

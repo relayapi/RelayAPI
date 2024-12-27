@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"net/http"
 	"strings"
+	"fmt"
 
 	"github.com/gin-gonic/gin"
 	"relayapi/server/internal/config"
@@ -36,10 +37,18 @@ func TokenAuth(cfg *config.Config) gin.HandlerFunc {
 			return
 		}
 
+		// 清理令牌字符串
+		encryptedToken = strings.TrimSpace(encryptedToken)
+
 		// 添加回 base64 padding
 		if padding := len(encryptedToken) % 4; padding > 0 {
 			encryptedToken += strings.Repeat("=", 4-padding)
 		}
+
+		// 打印调试信息
+		fmt.Printf("Token length: %d\n", len(encryptedToken))
+		fmt.Printf("First 10 bytes: %v\n", []byte(encryptedToken[:10]))
+		fmt.Printf("Full token: %s\n", encryptedToken)
 
 		// Base64 URL 安全解码
 		tokenBytes, err := base64.URLEncoding.DecodeString(encryptedToken)
@@ -48,10 +57,13 @@ func TokenAuth(cfg *config.Config) gin.HandlerFunc {
 				"error": "Invalid token format",
 				"message": "Token must be base64url encoded",
 				"details": err.Error(),
+				"token_length": len(encryptedToken),
+				"token_start": encryptedToken[:10],
 			})
 			c.Abort()
 			return
 		}
+		fmt.Printf("decryptedBytes: %x\n", tokenBytes)
 
 		// 解密令牌
 		decryptedBytes, err := encryptor.Decrypt(tokenBytes)

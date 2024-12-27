@@ -35,7 +35,7 @@ class TokenGenerator:
     def encrypt_token(self, token_data: Dict[str, Any]) -> str:
         """加密令牌数据"""
         # 序列化令牌数据
-        json_data = json.dumps(token_data).encode()
+        json_data = json.dumps(token_data, separators=(',', ':')).encode()
         
         # 生成 IV
         iv = self.generate_iv()
@@ -50,19 +50,20 @@ class TokenGenerator:
         # 组合 IV 和加密数据
         result = iv + encrypted_data
         
-        # Base64 编码
-        return base64.b64encode(result).decode()
+        # Base64 URL 安全编码
+        return base64.urlsafe_b64encode(result).decode()
 
 def create_test_token() -> Dict[str, Any]:
     """创建测试令牌数据"""
+    now = datetime.now()
     return {
         "id": "test-token-1",
         "api_key": "sk-test123456789",
         "max_calls": 100,
         "used_calls": 0,
-        "expire_time": (datetime.now() + timedelta(days=1)).isoformat(),
-        "created_at": datetime.now().isoformat(),
-        "updated_at": datetime.now().isoformat(),
+        "expire_time": (now + timedelta(days=1)).isoformat(),
+        "created_at": now.isoformat(),
+        "updated_at": now.isoformat(),
         "ext_info": "test token"
     }
 
@@ -96,8 +97,12 @@ def test_openai_api():
     }
     
     # 使用加密令牌调用 API
+    encrypted_token = encrypted_token.strip()
     url = f"{base_url}/api/openai/v1/chat/completions?token={encrypted_token}"
     print(f"请求 URL: {url}")
+    print(f"加密令牌: {encrypted_token}")
+    print(f"令牌长度: {len(encrypted_token)}")
+    print(f"令牌字节: {[ord(c) for c in encrypted_token[:10]]}...")
     
     try:
         resp = requests.post(url, headers=headers, json=data)
