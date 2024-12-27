@@ -3,7 +3,7 @@
 import json
 import base64
 import time
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta,timezone
 from typing import Dict, Any
 
 import requests
@@ -55,7 +55,7 @@ class TokenGenerator:
 
 def create_test_token() -> Dict[str, Any]:
     """创建测试令牌数据"""
-    now = datetime.now()
+    now = datetime.now(timezone.utc)
     return {
         "id": "test-token-1",
         "api_key": "sk-test123456789",
