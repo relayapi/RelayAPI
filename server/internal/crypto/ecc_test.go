@@ -1,41 +1,50 @@
 package crypto
 
 import (
+	"relayapi/server/internal/config"
 	"testing"
 )
 
-func TestKeyPairGeneration(t *testing.T) {
-	keyPair, err := GenerateKeyPair()
+func TestECCEncryptorCreation(t *testing.T) {
+	cfg := &config.Config{}
+	cfg.Crypto.PrivateKeyPath = "test/private.pem"
+	cfg.Crypto.PublicKeyPath = "test/public.pem"
+
+	encryptor, err := NewECCEncryptor(cfg)
 	if err != nil {
-		t.Fatalf("Failed to generate key pair: %v", err)
+		t.Fatalf("Failed to create ECC encryptor: %v", err)
 	}
 
-	if keyPair.PrivateKey == nil {
-		t.Error("Private key is nil")
+	if encryptor == nil {
+		t.Error("Expected encryptor, got nil")
 	}
-	if keyPair.PublicKey == nil {
-		t.Error("Public key is nil")
+
+	if encryptor.keyPair == nil {
+		t.Error("Expected key pair, got nil")
 	}
 }
 
-func TestEncryptDecrypt(t *testing.T) {
-	// 生成密钥对
-	keyPair, err := GenerateKeyPair()
+func TestECCEncryptDecrypt(t *testing.T) {
+	cfg := &config.Config{}
+	cfg.Crypto.PrivateKeyPath = "test/private.pem"
+	cfg.Crypto.PublicKeyPath = "test/public.pem"
+
+	encryptor, err := NewECCEncryptor(cfg)
 	if err != nil {
-		t.Fatalf("Failed to generate key pair: %v", err)
+		t.Fatalf("Failed to create ECC encryptor: %v", err)
 	}
 
 	// 测试数据
 	testData := []byte("Hello, World!")
 
 	// 加密
-	encrypted, err := keyPair.Encrypt(testData)
+	encrypted, err := encryptor.Encrypt(testData)
 	if err != nil {
 		t.Fatalf("Failed to encrypt data: %v", err)
 	}
 
 	// 解密
-	decrypted, err := keyPair.Decrypt(encrypted)
+	decrypted, err := encryptor.Decrypt(encrypted)
 	if err != nil {
 		t.Fatalf("Failed to decrypt data: %v", err)
 	}
@@ -47,15 +56,18 @@ func TestEncryptDecrypt(t *testing.T) {
 	}
 }
 
-func TestPublicKeyExportImport(t *testing.T) {
-	// 生成密钥对
-	keyPair, err := GenerateKeyPair()
+func TestECCPublicKeyExport(t *testing.T) {
+	cfg := &config.Config{}
+	cfg.Crypto.PrivateKeyPath = "test/private.pem"
+	cfg.Crypto.PublicKeyPath = "test/public.pem"
+
+	encryptor, err := NewECCEncryptor(cfg)
 	if err != nil {
-		t.Fatalf("Failed to generate key pair: %v", err)
+		t.Fatalf("Failed to create ECC encryptor: %v", err)
 	}
 
 	// 导出公钥
-	publicKeyStr := keyPair.ExportPublicKey()
+	publicKeyStr := encryptor.ExportPublicKey()
 	if publicKeyStr == "" {
 		t.Error("Exported public key is empty")
 	}
@@ -67,8 +79,8 @@ func TestPublicKeyExportImport(t *testing.T) {
 	}
 
 	// 验证导入的公钥
-	if importedKey.X.Cmp(keyPair.PublicKey.X) != 0 || 
-	   importedKey.Y.Cmp(keyPair.PublicKey.Y) != 0 {
+	if importedKey.X.Cmp(encryptor.keyPair.PublicKey.X) != 0 ||
+		importedKey.Y.Cmp(encryptor.keyPair.PublicKey.Y) != 0 {
 		t.Error("Imported public key does not match original")
 	}
 } 

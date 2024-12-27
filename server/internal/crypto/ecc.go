@@ -4,6 +4,7 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
 	"math/big"
@@ -19,21 +20,22 @@ type ECCEncryptor struct {
 // NewECCEncryptor 创建 ECC 加密器
 func NewECCEncryptor(cfg *config.Config) (*ECCEncryptor, error) {
 	var keyPair *KeyPair
-	var err error
 
 	// 检查是否存在密钥文件
-	if _, err := os.Stat(cfg.Crypto.PrivateKeyPath); os.IsNotExist(err) {
+	if _, fileErr := os.Stat(cfg.Crypto.PrivateKeyPath); os.IsNotExist(fileErr) {
 		// 生成新的密钥对
-		keyPair, err = GenerateKeyPair()
-		if err != nil {
-			return nil, err
+		var genErr error
+		keyPair, genErr = GenerateKeyPair()
+		if genErr != nil {
+			return nil, genErr
 		}
 		// TODO: 保存密钥到文件
 	} else {
 		// TODO: 从文件加载密钥
-		keyPair, err = GenerateKeyPair() // 临时使用生成的密钥
-		if err != nil {
-			return nil, err
+		var genErr error
+		keyPair, genErr = GenerateKeyPair() // 临时使用生成的密钥
+		if genErr != nil {
+			return nil, genErr
 		}
 	}
 
@@ -80,10 +82,15 @@ func (e *ECCEncryptor) Encrypt(data []byte) ([]byte, error) {
 	}
 
 	// 使用 ECC 加密 AES 密钥
-	x, y := e.keyPair.PublicKey.ScalarBaseMult(aesKey)
-	encryptedKey := append(x.Bytes(), y.Bytes()...)
+	hash := sha256.Sum256(aesKey)
+	r, s, err := ecdsa.Sign(rand.Reader, e.keyPair.PrivateKey, hash[:])
+	if err != nil {
+		return nil, fmt.Errorf("failed to encrypt AES key: %v", err)
+	}
 
 	// 组合加密的密钥和数据
+	encryptedKey := append(r.Bytes(), s.Bytes()...)
+	encryptedKey = append(encryptedKey, aesKey...)
 	result := append(encryptedKey, encryptedData...)
 	return []byte(base64.StdEncoding.EncodeToString(result)), nil
 }
@@ -96,22 +103,26 @@ func (e *ECCEncryptor) Decrypt(encryptedData []byte) ([]byte, error) {
 		return nil, fmt.Errorf("failed to decode base64: %v", err)
 	}
 
-	// 分离加密的密钥和数据
-	keySize := (e.keyPair.PublicKey.Curve.Params().BitSize + 7) / 8 * 2
-	if len(data) < keySize {
+	// 分离签名、AES密钥和加密数据
+	curve := e.keyPair.PublicKey.Curve
+	keySize := (curve.Params().BitSize + 7) / 8
+	signatureSize := keySize * 2
+	if len(data) < signatureSize+32 {
 		return nil, fmt.Errorf("encrypted data too short")
 	}
 
-	encryptedKey := data[:keySize]
-	encryptedContent := data[keySize:]
+	r := new(big.Int).SetBytes(data[:keySize])
+	s := new(big.Int).SetBytes(data[keySize:signatureSize])
+	aesKey := data[signatureSize : signatureSize+32]
+	encryptedContent := data[signatureSize+32:]
 
-	// 解密 AES 密钥
-	x := new(big.Int).SetBytes(encryptedKey[:keySize/2])
-	y := new(big.Int).SetBytes(encryptedKey[keySize/2:])
-	aesKey := make([]byte, 32)
-	copy(aesKey, x.Bytes())
+	// 验证签名
+	hash := sha256.Sum256(aesKey)
+	if !ecdsa.Verify(e.keyPair.PublicKey, hash[:], r, s) {
+		return nil, fmt.Errorf("invalid signature")
+	}
 
-	// 使用解密的 AES 密钥解密数据
+	// 使用 AES 密钥解密数据
 	aesEncryptor := &AESEncryptor{
 		key:    aesKey,
 		ivSeed: make([]byte, 16),
