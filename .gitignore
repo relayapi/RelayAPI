@@ -1,0 +1,36 @@
+# Go 编译输出
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# 测试二进制文件
+*.test
+
+# 覆盖率文件
+*.out
+
+# 依赖目录
+/vendor/
+
+# IDE 目录
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# 操作系统文件
+.DS_Store
+Thumbs.db
+
+# 日志文件
+*.log
+
+# 环境变量文件
+.env
+.env.local
+
+# 编译目录
+/bin/
+/dist/ 

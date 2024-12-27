@@ -111,7 +111,7 @@ import { RelayAPISDK } from '@relayapi/sdk'
 const sdk = new RelayAPISDK({
   publicKey: 'YOUR_PUBLIC_KEY'
 })
-
+const URL = 'https://relay.api.example.com/'
 // 生成加密令牌
 const token = await sdk.generateToken({
   apiKey: 'sk-...',
@@ -121,19 +121,17 @@ const token = await sdk.generateToken({
 })
 
 // 返回令牌给前端
-return { token }
+const url = new URL(URL);
+url.searchParams.append('token', token);
+return { URL: url.toString() };
 ```
 
 ### 前端使用示例
 
 ```typescript
 // 使用后端生成的令牌调用 API
-const response = await fetch('https://relay.api.example.com/v1/chat/completions', {
+const response = await fetch(URL, {
   method: 'POST',
-  headers: {
-    'Authorization': `Bearer ${token}`,
-    'Content-Type': 'application/json'
-  },
   body: JSON.stringify({
     model: 'gpt-4',
     messages: [...]
@@ -172,7 +170,7 @@ MIT
 
 1. **后端技术栈**
    - 主框架：Go + Gin
-   - 数据库：Redis（调用计数）+ MongoDB（日志记录）
+   - 数据库：PostgresSQL（日志记录）
    - 加密：golang.org/x/crypto（ECC 实现）
    - API 文档：Swagger
 
