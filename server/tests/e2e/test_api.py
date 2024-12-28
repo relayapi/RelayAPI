@@ -12,7 +12,7 @@ from Crypto.Random import get_random_bytes
 from Crypto.Util.Padding import pad, unpad
 
 class TokenGenerator:
-    def __init__(self, config_path: str = "../../default.rai"):
+    def __init__(self, config_path: str = "../../../default.rai"):
         # 读取配置文件
         with open(config_path, 'r') as f:
             self.config = json.load(f)
@@ -47,7 +47,7 @@ class TokenGenerator:
         padded_data = pad(json_data, AES.block_size)
         encrypted_data = cipher.encrypt(padded_data)
         
-        # 组合 IV 和加密数据
+        # 组合 IV 和���密数据
         result = iv + encrypted_data
         
         # Base64 URL 安全编码
@@ -60,10 +60,9 @@ def create_test_token() -> Dict[str, Any]:
         "id": "test-token-1",
         "api_key": "sk-573af3eca24f492a83d5e64894ed91f5",
         "max_calls": 100,
-        "used_calls": 0,
         "expire_time": (now + timedelta(days=1)).isoformat(),
         "created_at": now.isoformat(),
-        "updated_at": now.isoformat(),
+        "provider": "dashscope",
         "ext_info": "test token"
     }
 
@@ -84,7 +83,7 @@ def test_openai_api():
     
     # 测试健康检查
     print("\n测试健康检查...")
-    resp = requests.get(f"{base_url}/health?token={encrypted_token.strip()}")
+    resp = requests.get(f"{base_url}/health")
     print(f"状态码: {resp.status_code}")
     print(f"响应: {resp.json()}")
     assert resp.status_code == 200
