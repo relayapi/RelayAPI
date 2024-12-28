@@ -12,7 +12,7 @@ npm install relayapi-sdk
 
 ## 配置
 
-SDK 需要一个配置文件（`.rai`）或配置对象来初始化。配置文件示例：
+SDK 需要一个配置对象来初始化。你可以从配置文件（`.rai`）加载配置，或直接传入配置对象。配置格式示例：
 
 ```json
 {
@@ -36,9 +36,14 @@ SDK 需要一个配置文件（`.rai`）或配置对象来初始化。配置文�
 
 ```javascript
 import { RelayAPIClient } from 'relayapi-sdk';
+import fs from 'fs/promises';
+
+// 从配置文件加载配置
+const configContent = await fs.readFile('config.rai', 'utf-8');
+const config = JSON.parse(configContent);
 
 // 创建客户端实例
-const client = new RelayAPIClient('config.rai');
+const client = new RelayAPIClient(config);
 
 // 创建令牌
 const token = client.createToken({
@@ -108,7 +113,7 @@ new RelayAPIClient(config)
 
 - `config`: 字符串（配置文件路径）或对象（配置对象）
 
-#### 方法
+#### 方��
 
 ##### createToken(options)
 
@@ -162,7 +167,7 @@ new RelayAPIClient(config)
 
 ## 错误处理
 
-SDK 中的所有方法都会在发生错误时抛出异常。建议使用 try-catch 块来处理可能的错误：
+SDK 中的所有方法���会在发生错误时抛出异常。建议使用 try-catch 块来处理可能的错误：
 
 ```javascript
 try {

@@ -16,35 +16,7 @@ export class TokenGenerator {
      * @param {string|object} config 配置文件路径或配置对象
      */
     async initialize(config) {
-        if (typeof config === 'string') {
-            try {
-                const data = await fs.readFile(config, 'utf8');
-                this.config = JSON.parse(data);
-            } catch (error) {
-                if (config === 'default.rai') {
-                    // 使用默认配置
-                    this.config = {
-                        version: '1.0.0',
-                        server: {
-                            host: 'http://localhost',
-                            port: 8080,
-                            base_path: '/relayapi/'
-                        },
-                        crypto: {
-                            method: 'aes',
-                            aes_key: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
-                            aes_iv_seed: 'fedcba9876543210'
-                        }
-                    };
-                } else {
-                    throw new Error(`Failed to load config: ${error.message}`);
-                }
-            }
-        } else if (typeof config === 'object') {
-            this.config = config;
-        } else {
-            throw new Error('Invalid config parameter');
-        }
+        this.config = config;
 
         // 验证配置
         this.validateConfig();
@@ -145,6 +117,9 @@ export class TokenGenerator {
         const { host, port, base_path } = this.config.server;
         const basePath = base_path.endsWith('/') ? base_path : `${base_path}/`;
         const cleanPath = path.startsWith('/') ? path.slice(1) : path;
+        if (path === 'health') {
+            return `${host}:${port}/health`;
+        }
         return `${host}:${port}${basePath}${cleanPath}`;
     }
 } 

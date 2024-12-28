@@ -1,16 +1,21 @@
 import { RelayAPIClient } from '../src/Client.js';
+import fs from 'fs/promises';
 
 async function main() {
     try {
+        // 从配置文件加载配置
+        const configContent = await fs.readFile('default.rai', 'utf-8');
+        const config = JSON.parse(configContent);
+
         // 创建客户端实例
-        const client = new RelayAPIClient('default.rai');
+        const client = new RelayAPIClient(config);
 
         // 创建令牌
         const token = client.createToken({
-            apiKey: 'your-api-key',
+            apiKey: 'sk-573af3eca24f492a83d5e64894ed91f5',
             maxCalls: 100,
             expireDays: 1,
-            provider: 'openai'
+            provider: 'dashscope'
         });
 
         console.log('Token created:', token);
@@ -25,7 +30,7 @@ async function main() {
                 { role: 'system', content: 'You are a helpful assistant.' },
                 { role: 'user', content: 'What is the capital of France?' }
             ],
-            model: 'gpt-3.5-turbo',
+            model: 'qwen-vl-max',
             temperature: 0.7,
             maxTokens: 1000,
             token: token

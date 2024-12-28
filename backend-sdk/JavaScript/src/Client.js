@@ -4,7 +4,7 @@ import { TokenGenerator } from './TokenGenerator.js';
 export class RelayAPIClient {
     /**
      * 初始化 RelayAPI 客户端
-     * @param {string|object} config 配置文件路径或配置对象
+     * @param {object} config 配置对象
      */
     constructor(config) {
         this.tokenGenerator = new TokenGenerator(config);
@@ -45,7 +45,7 @@ export class RelayAPIClient {
             token
         } = options;
 
-        const url = this.generateUrl('v1/chat/completions', token);
+        const url = this.generateUrl('chat/completions', token);
         
         try {
             const response = await axios.post(url, {
@@ -75,7 +75,7 @@ export class RelayAPIClient {
             token
         } = options;
 
-        const url = this.generateUrl('v1/images/generations', token);
+        const url = this.generateUrl('images/generations', token);
         
         try {
             const response = await axios.post(url, {
@@ -103,7 +103,7 @@ export class RelayAPIClient {
             token
         } = options;
 
-        const url = this.generateUrl('v1/embeddings', token);
+        const url = this.generateUrl('embeddings', token);
         
         try {
             const response = await axios.post(url, {
