@@ -46,9 +46,9 @@ func TokenAuth(cfg *config.ClientConfig) gin.HandlerFunc {
 		}
 
 		// 打印调试信息
-		fmt.Printf("Token length: %d\n", len(encryptedToken))
-		fmt.Printf("First 10 bytes: %v\n", []byte(encryptedToken[:10]))
-		fmt.Printf("Full token: %s\n", encryptedToken)
+		// fmt.Printf("Token length: %d\n", len(encryptedToken))
+		// fmt.Printf("First 10 bytes: %v\n", []byte(encryptedToken[:10]))
+		// fmt.Printf("Full token: %s\n", encryptedToken)
 
 		// Base64 URL 安全解码
 		tokenBytes, err := base64.URLEncoding.DecodeString(encryptedToken)
