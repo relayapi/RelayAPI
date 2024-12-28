@@ -4,12 +4,12 @@ import (
 	"encoding/base64"
 	"net/http"
 	"strings"
-	"fmt"
 
-	"github.com/gin-gonic/gin"
 	"relayapi/server/internal/config"
 	"relayapi/server/internal/crypto"
 	"relayapi/server/internal/models"
+
+	"github.com/gin-gonic/gin"
 )
 
 // TokenAuth 验证访问令牌的中间件
@@ -30,7 +30,7 @@ func TokenAuth(cfg *config.ClientConfig) gin.HandlerFunc {
 
 		if encryptedToken == "" {
 			c.JSON(http.StatusUnauthorized, gin.H{
-				"error": "Missing API token",
+				"error":   "Missing API token",
 				"message": "Please provide your API token as a URL parameter: ?token=your_token",
 			})
 			c.Abort()
@@ -54,11 +54,11 @@ func TokenAuth(cfg *config.ClientConfig) gin.HandlerFunc {
 		tokenBytes, err := base64.URLEncoding.DecodeString(encryptedToken)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
-				"error": "Invalid token format",
-				"message": "Token must be base64url encoded",
-				"details": err.Error(),
+				"error":        "Invalid token format",
+				"message":      "Token must be base64url encoded",
+				"details":      err.Error(),
 				"token_length": len(encryptedToken),
-				"token_start": encryptedToken[:10],
+				"token_start":  encryptedToken[:10],
 			})
 			c.Abort()
 			return
@@ -68,7 +68,7 @@ func TokenAuth(cfg *config.ClientConfig) gin.HandlerFunc {
 		decryptedBytes, err := encryptor.Decrypt(tokenBytes)
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{
-				"error": "Invalid token",
+				"error":   "Invalid token",
 				"message": "Failed to decrypt token",
 				"details": err.Error(),
 			})
@@ -80,7 +80,7 @@ func TokenAuth(cfg *config.ClientConfig) gin.HandlerFunc {
 		token := &models.Token{}
 		if err := token.Deserialize(decryptedBytes); err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{
-				"error": "Invalid token",
+				"error":   "Invalid token",
 				"message": "Failed to parse token data",
 				"details": err.Error(),
 			})
@@ -91,7 +91,7 @@ func TokenAuth(cfg *config.ClientConfig) gin.HandlerFunc {
 		// 验证令牌有效性
 		if !token.IsValid() {
 			c.JSON(http.StatusUnauthorized, gin.H{
-				"error": "Token expired or exceeded usage limit",
+				"error":   "Token expired or exceeded usage limit",
 				"message": "Please obtain a new token",
 			})
 			c.Abort()
@@ -117,4 +117,4 @@ func RateLimit() gin.HandlerFunc {
 		// TODO: 实现请求频率限制
 		c.Next()
 	}
-} 
+}

@@ -35,3 +35,5 @@ Thumbs.db
 /bin/
 /dist/ 
 server/bin/relayapi-server
+*.egg-info/
+*.pyc
