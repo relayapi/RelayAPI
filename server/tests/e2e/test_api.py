@@ -96,7 +96,7 @@ def test_openai_api():
     }
     
     # 使用加密令牌调用 API
-    url = f"{base_url}{generator.config['server']['base_path']}/chat/completions?token={encrypted_token.strip()}"
+    url = f"{base_url}{generator.config['server']['base_path']}/v1/chat/completions?token={encrypted_token.strip()}"
     print(f"请求 URL: {url}")
     print(f"加密令牌: {encrypted_token}")
     print(f"令牌长度: {len(encrypted_token)}")
@@ -111,7 +111,7 @@ def test_openai_api():
     
     # 测试无效令牌
     print("\n测试无效令牌...")
-    invalid_url = f"{base_url}{generator.config['server']['base_path']}/chat/completions?token=invalid_token"
+    invalid_url = f"{base_url}{generator.config['server']['base_path']}?token=invalid_token"
     try:
         resp = requests.post(invalid_url, headers=headers, json=data)
         print(f"状态码: {resp.status_code}")

@@ -68,7 +68,7 @@ func DefaultClientConfig() ClientConfig {
 		}{
 			Host:     "http://localhost",
 			Port:     8080,
-			BasePath: "/api/openai/v1",
+			BasePath: "/relayapi/",
 		},
 		Crypto: struct {
 			Method    string `json:"method"`

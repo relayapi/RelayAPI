@@ -3,7 +3,7 @@
     "server": {
         "host": "http://localhost",
         "port": 8080,
-        "base_path": "/api/openai/v1"
+        "base_path": "/relayapi/"
     },
     "crypto": {
         "method": "aes",
