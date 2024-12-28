@@ -85,11 +85,15 @@ func (h *APIHandler) HandleRequest(c *gin.Context) {
 	
 	targetURL := fmt.Sprintf("%s/%s", baseURL, path)
 
-	// 转发请求
-	headers := map[string]string{
-		"Content-Type":  "application/json",
-		"Authorization": fmt.Sprintf("Bearer %s", apiKey),
+	// 转发请求，保留原始请求头
+	headers := make(map[string]string)
+	for key, values := range c.Request.Header {
+		if len(values) > 0 {
+			headers[key] = values[0]
+		}
 	}
+	// 设置 Authorization 头
+	headers["Authorization"] = fmt.Sprintf("Bearer %s", apiKey)
 
 	fmt.Printf("Provider: %s, Target URL: %s\n", provider, targetURL)
 
@@ -116,6 +120,12 @@ func (h *APIHandler) HandleRequest(c *gin.Context) {
 			c.Header(key, value)
 		}
 	}
+	// 设置跨域头
+	origin := c.GetHeader("Origin")
+	if origin == "" {
+		origin = "*"
+	}
+	c.Header("Access-Control-Allow-Origin", origin)
 
 	// 返回响应
 	c.Data(resp.StatusCode, resp.Header.Get("Content-Type"), respBody)
