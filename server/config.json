@@ -1,20 +1,33 @@
 {
   "server": {
-    "port": 8080
+    "host": "0.0.0.0",
+    "port": 8080,
+    "read_timeout": 30,
+    "write_timeout": 30,
+    "max_header_bytes": 1048576
   },
   "database": {
     "host": "localhost",
     "port": 5432,
-    "user": "postgres",
-    "password": "",
-    "dbname": "relayapi"
+    "user": "relayapi",
+    "password": "relayapi",
+    "dbname": "relayapi",
+    "max_open_conns": 10,
+    "max_idle_conns": 5,
+    "conn_max_lifetime": 3600
   },
   "crypto": {
     "method": "aes",
-    "key_size": 256,
-    "private_key_path": "keys/private.pem",
-    "public_key_path": "keys/public.pem",
-    "aes_key": "7b8a9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b",
-    "aes_iv_seed": "1234567890123456"
+    "aes_key": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+    "aes_iv_seed": "fedcba9876543210"
+  },
+  "log": {
+    "level": "info",
+    "format": "json",
+    "output": "stdout"
+  },
+  "rate_limit": {
+    "requests_per_second": 10,
+    "burst": 20
   }
 } 

@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	OpenAIBaseURL = "https://api.openai.com/v1"
+	OpenAIBaseURL = "https://dashscope.aliyuncs.com/compatible-mode"
 )
 
 // OpenAIHandler 处理 OpenAI API 请求
@@ -62,6 +62,8 @@ func (h *OpenAIHandler) HandleRequest(c *gin.Context) {
 		"Content-Type":  "application/json",
 		"Authorization": fmt.Sprintf("Bearer %s", token),
 	}
+
+	fmt.Println("targetURL:",targetURL)
 
 	resp, err := h.proxyService.ProxyRequest(c.Request.Method, targetURL, headers, body)
 	if err != nil {
