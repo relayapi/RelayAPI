@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	OpenAIBaseURL = "https://dashscope.aliyuncs.com/compatible-mode"
+	OpenAIBaseURL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 )
 
 // OpenAIHandler 处理 OpenAI API 请求
@@ -49,7 +49,7 @@ func (h *OpenAIHandler) HandleRequest(c *gin.Context) {
 	targetURL := OpenAIBaseURL + path
 
 	// 从上下文中获取令牌
-	token, exists := c.Get("api_token")
+	token, exists := c.Get("api_key")
 	if !exists {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "API token not found in context",

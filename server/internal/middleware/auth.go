@@ -13,7 +13,7 @@ import (
 )
 
 // TokenAuth 验证访问令牌的中间件
-func TokenAuth(cfg *config.Config) gin.HandlerFunc {
+func TokenAuth(cfg *config.ClientConfig) gin.HandlerFunc {
 	// 创建加密器
 	encryptor, err := crypto.NewEncryptor(cfg)
 	if err != nil {
@@ -63,7 +63,6 @@ func TokenAuth(cfg *config.Config) gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-		fmt.Printf("decryptedBytes: %x\n", tokenBytes)
 
 		// 解密令牌
 		decryptedBytes, err := encryptor.Decrypt(tokenBytes)
@@ -106,7 +105,7 @@ func TokenAuth(cfg *config.Config) gin.HandlerFunc {
 
 		// 将令牌和 API Key 存储在上下文中
 		c.Set("token", token)
-		c.Set("api_token", token.APIKey)
+		c.Set("api_key", token.APIKey)
 
 		c.Next()
 	}

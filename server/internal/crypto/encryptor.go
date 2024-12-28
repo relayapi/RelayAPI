@@ -14,7 +14,7 @@ type Encryptor interface {
 }
 
 // NewEncryptor 创建加密器
-func NewEncryptor(cfg *config.Config) (Encryptor, error) {
+func NewEncryptor(cfg *config.ClientConfig) (Encryptor, error) {
 	switch cfg.Crypto.Method {
 	case "aes":
 		// 解码 AES 密钥
@@ -38,7 +38,7 @@ func NewEncryptor(cfg *config.Config) (Encryptor, error) {
 
 		return NewAESEncryptor(key, ivSeed)
 	case "ecc":
-		return NewECCEncryptor(cfg)
+		return nil, fmt.Errorf("ECC encryption is no longer supported")
 	default:
 		return nil, fmt.Errorf("unsupported encryption method: %s", cfg.Crypto.Method)
 	}
