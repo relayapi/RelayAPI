@@ -6,13 +6,14 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/gin-gonic/gin"
-	"relayapi/server/internal/services"
 	"relayapi/server/internal/models"
+	"relayapi/server/internal/services"
+
+	"github.com/gin-gonic/gin"
 )
 
 const (
-	OpenAIBaseURL = "https://api.openai.com/v1"
+	OpenAIBaseURL    = "https://api.openai.com/v1"
 	DashScopeBaseURL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 )
 
@@ -76,14 +77,18 @@ func (h *APIHandler) HandleRequest(c *gin.Context) {
 
 	// 构建目标 URL
 	baseURL := h.getBaseURL(provider)
-	
+
 	// 处理路径
 	// 移除开头的斜杠
 	path = strings.TrimPrefix(path, "/")
 	// 如果路径包含版本号，则移除
 	path = strings.TrimPrefix(path, "v1/")
-	
 	targetURL := fmt.Sprintf("%s/%s", baseURL, path)
+
+	extPath, _ := c.Get("ext_path")
+	if extPath != nil {
+		targetURL = fmt.Sprintf("%s/%s", baseURL, extPath)
+	}
 
 	// 转发请求，保留原始请求头
 	headers := make(map[string]string)
@@ -96,6 +101,8 @@ func (h *APIHandler) HandleRequest(c *gin.Context) {
 	headers["Authorization"] = fmt.Sprintf("Bearer %s", apiKey)
 
 	fmt.Printf("Provider: %s, Target URL: %s\n", provider, targetURL)
+	// fmt.Printf("Headers: %v\n", headers)
+	// fmt.Printf("Body: %s\n", string(body))
 
 	resp, err := h.proxyService.ProxyRequest(c.Request.Method, targetURL, headers, body)
 	if err != nil {
@@ -129,4 +136,4 @@ func (h *APIHandler) HandleRequest(c *gin.Context) {
 
 	// 返回响应
 	c.Data(resp.StatusCode, resp.Header.Get("Content-Type"), respBody)
-} 
+}

@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"encoding/base64"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -11,6 +12,14 @@ import (
 
 	"github.com/gin-gonic/gin"
 )
+
+func splitStringByFirstSlash(input string) (string, string) {
+	index := strings.Index(input, "/")
+	if index == -1 {
+		return input, "" // 如果没有找到斜杠，返回原字符串和空字符串
+	}
+	return input[:index], input[index+1:]
+}
 
 // TokenAuth 验证访问令牌的中间件
 func TokenAuth(cfg *config.ClientConfig) gin.HandlerFunc {
@@ -50,6 +59,12 @@ func TokenAuth(cfg *config.ClientConfig) gin.HandlerFunc {
 		// fmt.Printf("First 10 bytes: %v\n", []byte(encryptedToken[:10]))
 		// fmt.Printf("Full token: %s\n", encryptedToken)
 
+		encryptedToken, extPath := splitStringByFirstSlash(encryptedToken)
+		if extPath != "" {
+			c.Set("ext_path", strings.TrimRight(extPath, "="))
+		}
+		fmt.Printf("extPath: %s\n", extPath)
+		fmt.Printf("encryptedToken: %s\n", encryptedToken)
 		// Base64 URL 安全解码
 		tokenBytes, err := base64.URLEncoding.DecodeString(encryptedToken)
 		if err != nil {

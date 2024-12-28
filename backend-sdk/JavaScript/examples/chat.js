@@ -1,5 +1,9 @@
 import { RelayAPIClient } from '../src/Client.js';
 import fs from 'fs/promises';
+import dotenv from 'dotenv';
+
+// 加载环境变量
+dotenv.config();
 
 async function main() {
     try {
@@ -10,9 +14,15 @@ async function main() {
         // 创建客户端实例
         const client = new RelayAPIClient(config);
 
+        // 从环境变量获取 API key
+        const apiKey = process.env.RELAY_API_KEY;
+        if (!apiKey) {
+            throw new Error('RELAY_API_KEY environment variable is not set');
+        }
+
         // 创建令牌
         const token = client.createToken({
-            apiKey: 'sk-573af3eca24f492a83d5e64894ed91f5',
+            apiKey: apiKey,
             maxCalls: 100,
             expireDays: 1,
             provider: 'dashscope'
@@ -33,7 +43,8 @@ async function main() {
             model: 'qwen-vl-max',
             temperature: 0.7,
             maxTokens: 1000,
-            token: token
+            token: token,
+            stream: true
         });
 
         console.log('Chat response:', chatResponse);
