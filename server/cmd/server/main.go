@@ -44,13 +44,10 @@ func main() {
 	// 创建代理服务
 	proxyService := services.NewProxyService()
 
-	// 创建 OpenAI 处理器
-	openaiHandler := handlers.NewOpenAIHandler(proxyService)
+	// 创建 API 处理器
+	apiHandler := handlers.NewAPIHandler(proxyService)
 
-	// 添加中间件
-	router.Use(middleware.TokenAuth(&cfg.Client))
-
-	// 注册路由
+	// 健康检查路由
 	router.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"status": "ok",
@@ -59,8 +56,18 @@ func main() {
 		})
 	})
 
-	// OpenAI API 路由
-	router.Any("/api/openai/v1/*path", openaiHandler.HandleRequest)
+	// API 路由组
+	api := router.Group("/relayapi")
+	{
+		// 添加认证中间件
+		api.Use(middleware.TokenAuth(&cfg.Client))
+
+		// 添加速率限制中间件
+		api.Use(middleware.RateLimit())
+
+		// 所有 API 请求通过统一入口处理
+		api.Any("/*path", apiHandler.HandleRequest)
+	}
 
 	// 启动服务器
 	addr := fmt.Sprintf("%s:%d", cfg.Server.Server.Host, cfg.Server.Server.Port)
