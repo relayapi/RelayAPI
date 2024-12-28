@@ -8,14 +8,14 @@ from .token import TokenGenerator
 class RelayAPIClient:
     """RelayAPI 客户端，用于调用 API 服务"""
 
-    def __init__(self, config_path: str = "default.rai"):
+    def __init__(self, config: Union[str, Dict[str, Any]] = "default.rai"):
         """
         初始化 RelayAPI 客户端
         
         Args:
-            config_path: .rai 配置文件路径
+            config: .rai 配置文件路径或配置字典对象
         """
-        self.token_generator = TokenGenerator(config_path)
+        self.token_generator = TokenGenerator(config)
         self.headers = {
             "Content-Type": "application/json"
         }
@@ -206,7 +206,7 @@ class RelayAPIClient:
         
         Args:
             api_key: API 密钥
-            api_type: API 类型 (chat_completions/images_generations/embeddings)
+            api_type: API 类��� (chat_completions/images_generations/embeddings)
             max_calls: 最大调用次数
             expire_days: 过期天数
             provider: API 提供者 (openai/dashscope)

@@ -1,4 +1,3 @@
-```markdown
 # RelayAPI Python SDK
 
 RelayAPI Python SDK 是一个用于访问 RelayAPI Server 的客户端库。它提供了简单的接口来创建访问令牌和调用各种 API 服务。
@@ -42,8 +41,32 @@ SDK 需要一个 `.rai` 配置文件来初始化。默认会在当前目录查�
 ```python
 from relayapi import RelayAPIClient
 
-# 创建客户端实例
+# 方式1：使用配置文件初始化
 client = RelayAPIClient("default.rai")
+
+# 方式2：使用配置字典初始化
+config = {
+    "version": "1.0.0",
+    "server": {
+        "host": "http://localhost",
+        "port": 8080,
+        "base_path": "/relayapi/"
+    },
+    "crypto": {
+        "method": "aes",
+        "aes_key": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+        "aes_iv_seed": "fedcba9876543210"
+    }
+}
+client = RelayAPIClient(config)
+
+# 生成 API URL
+url = client.generate_api_url(
+    api_key="your-api-key",
+    api_type="chat_completions", 
+    max_calls=100,
+    expire_days=1,
+    provider="dashscope"  # 或 "openai")
 
 # 创建访问令牌
 token = client.create_token(
@@ -75,11 +98,45 @@ print(response["choices"][0]["message"]["content"])
 
 #### 初始化
 
+客户端支持两种初始化方式：
+
+1. 使用配置文件初始化
 ```python
 client = RelayAPIClient(config_path: str = "default.rai")
 ```
 
+2. 使用配置字典初始化
+```python
+config = {
+    "version": "1.0.0",
+    "server": {
+        "host": "http://localhost",  # 服务器地址
+        "port": 8080,                # 服务器端口
+        "base_path": "/relayapi/"    # API 基础路径
+    },
+    "crypto": {
+        "method": "aes",             # 加密方式（目前仅支持 aes）
+        "aes_key": "hex_encoded_key",# 32字节的16进制编码密钥
+        "aes_iv_seed": "iv_seed"     # IV种子（用于生成初始化向量）
+    }
+}
+client = RelayAPIClient(config)
+```
+
 #### 方法
+
+
+0. 一步生成 API URL（包含令牌创建）
+```python
+url = client.generate_api_url(
+    api_key: str,                # API 密钥
+    api_type: str,               # API 类型：chat_completions/images_generations/embeddings
+    max_calls: int = 100,        # 最大调用次数
+    expire_days: int = 1,        # 过期天数
+    provider: str = "dashscope", # API 提供者
+    ext_info: str = ""          # 扩展信息
+) -> str
+```
 
 1. 创建令牌
 ```python
@@ -108,7 +165,7 @@ response = client.images_generations(
     token: str,                # 访问令牌
     prompt: str,               # 图像描述
     n: int = 1,               # 生成数量
-    size: str = "1024x1024",  # 图像尺寸
+    size: str = "1024x1024",  # 图��尺寸
     **kwargs                  # 其他参数
 ) -> Dict
 ```
@@ -136,17 +193,6 @@ url = client.generate_api_url_with_token(
 ) -> str
 ```
 
-7. 一步生成 API URL（包含令牌创建）
-```python
-url = client.generate_api_url(
-    api_key: str,                # API 密钥
-    api_type: str,               # API 类型：chat_completions/images_generations/embeddings
-    max_calls: int = 100,        # 最大调用次数
-    expire_days: int = 1,        # 过期天数
-    provider: str = "dashscope", # API 提供者
-    ext_info: str = ""          # 扩展信息
-) -> str
-```
 
 ### TokenGenerator
 
@@ -174,28 +220,6 @@ SDK 使用 Python 的异常机制处理错误：
 - requests >= 2.25.0
 - pycryptodome >= 3.10.0
 
-## 开发计划
-
-1. 添加更多 API 支持
-   - 函数调用
-   - 流式响应
-   - 文件操作
-
-2. 改进功能
-   - 异步支持
-   - 重试机制
-   - 速率限制
-   - 缓存机制
-
-3. 开发工具
-   - 命令行工具
-   - 调试工具
-   - 性能分析
-
-4. 文档和示例
-   - API 参考文档
-   - 更多使用示例
-   - 最佳实践指南
 
 ## 许可证
 

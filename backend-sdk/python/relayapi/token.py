@@ -1,7 +1,7 @@
 import json
 import base64
 from datetime import datetime, timedelta, timezone
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, Union
 
 from Crypto.Cipher import AES
 from Crypto.Random import get_random_bytes
@@ -10,16 +10,19 @@ from Crypto.Util.Padding import pad
 class TokenGenerator:
     """令牌生成器，用于创建和加密访问令牌"""
 
-    def __init__(self, config_path: str = "default.rai"):
+    def __init__(self, config: Union[str, Dict[str, Any]] = "default.rai"):
         """
         初始化令牌生成器
         
         Args:
-            config_path: .rai 配置文件路径
+            config: .rai 配置文件路径或配置字典对象
         """
-        # 读取配置文件
-        with open(config_path, 'r') as f:
-            self.config = json.load(f)
+        # 读取配置
+        if isinstance(config, str):
+            with open(config, 'r') as f:
+                self.config = json.load(f)
+        else:
+            self.config = config
         
         # 获取加密配置
         self.crypto_config = self.config['crypto']
