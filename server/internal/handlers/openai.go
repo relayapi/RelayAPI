@@ -101,22 +101,11 @@ func (h *APIHandler) HandleRequest(c *gin.Context) {
 	headers["Authorization"] = fmt.Sprintf("Bearer %s", apiKey)
 
 	fmt.Printf("Provider: %s, Target URL: %s\n", provider, targetURL)
-	// fmt.Printf("Headers: %v\n", headers)
-	// fmt.Printf("Body: %s\n", string(body))
 
 	resp, err := h.proxyService.ProxyRequest(c.Request.Method, targetURL, headers, body)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": fmt.Sprintf("Failed to proxy request: %v", err),
-		})
-		return
-	}
-
-	// 读取响应
-	respBody, err := h.proxyService.ReadResponse(resp)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": fmt.Sprintf("Failed to read response: %v", err),
 		})
 		return
 	}
@@ -133,6 +122,26 @@ func (h *APIHandler) HandleRequest(c *gin.Context) {
 		origin = "*"
 	}
 	c.Header("Access-Control-Allow-Origin", origin)
+
+	// 检查是否为流式响应
+	if strings.Contains(resp.Header.Get("Content-Type"), "text/event-stream") {
+		err = h.proxyService.HandleStreamResponse(c, resp)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": fmt.Sprintf("Failed to handle stream response: %v", err),
+			})
+		}
+		return
+	}
+
+	// 非流式响应处理
+	respBody, err := h.proxyService.ReadResponse(resp)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": fmt.Sprintf("Failed to read response: %v", err),
+		})
+		return
+	}
 
 	// 返回响应
 	c.Data(resp.StatusCode, resp.Header.Get("Content-Type"), respBody)

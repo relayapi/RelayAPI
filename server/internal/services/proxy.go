@@ -1,9 +1,13 @@
 package services
 
 import (
+	"bufio"
 	"bytes"
 	"io"
 	"net/http"
+	"strings"
+
+	"github.com/gin-gonic/gin"
 )
 
 // ProxyService 处理 API 代理请求
@@ -44,4 +48,49 @@ func (s *ProxyService) ProxyRequest(method, url string, headers map[string]strin
 func (s *ProxyService) ReadResponse(resp *http.Response) ([]byte, error) {
 	defer resp.Body.Close()
 	return io.ReadAll(resp.Body)
-} 
+}
+
+// HandleStreamResponse 处理流式响应
+func (s *ProxyService) HandleStreamResponse(c *gin.Context, resp *http.Response) error {
+	// 设置响应头
+	c.Header("Content-Type", "text/event-stream")
+	c.Header("Cache-Control", "no-cache")
+	c.Header("Connection", "keep-alive")
+	c.Header("Transfer-Encoding", "chunked")
+
+	// 获取原始响应的 Content-Type
+	contentType := resp.Header.Get("Content-Type")
+	isEventStream := strings.Contains(contentType, "text/event-stream")
+
+	// 创建一个 reader
+	reader := bufio.NewReader(resp.Body)
+	defer resp.Body.Close()
+
+	// 刷新写入器以确保头信息被发送
+	c.Writer.Flush()
+
+	for {
+		// 读取一行数据
+		line, err := reader.ReadBytes('\n')
+		if err != nil {
+			if err == io.EOF {
+				return nil
+			}
+			return err
+		}
+
+		// 如果不是 SSE 格式，转换为 SSE 格式
+		if !isEventStream && len(line) > 0 {
+			line = []byte("data: " + string(line) + "\n\n")
+		}
+
+		// 写入数据
+		_, err = c.Writer.Write(line)
+		if err != nil {
+			return err
+		}
+
+		// 刷新写入器
+		c.Writer.Flush()
+	}
+}
