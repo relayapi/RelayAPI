@@ -24,11 +24,11 @@
     }
   },
   "rate_limit": {
-    "requests_per_second": 10,
-    "burst": 20,
+    "requests_per_second": 20,
+    "burst": 40,
     "ip_limit": {
-      "requests_per_second": 2,
-      "burst": 4
+      "requests_per_second": 10,
+      "burst": 20
     }
   }
 } 
