@@ -2,8 +2,12 @@ package logger
 
 import (
 	"bytes"
+	"compress/gzip"
+	"compress/zlib"
+	"encoding/base64"
 	"fmt"
 	"io"
+	"mime"
 	"strings"
 	"time"
 
@@ -22,6 +26,68 @@ type bodyLogWriter struct {
 func (w bodyLogWriter) Write(b []byte) (int, error) {
 	w.body.Write(b)
 	return w.ResponseWriter.Write(b)
+}
+
+// decompressBody 根据Content-Encoding解压缩body
+func decompressBody(encoding string, body []byte) ([]byte, error) {
+	switch strings.ToLower(encoding) {
+	case "gzip":
+		reader, err := gzip.NewReader(bytes.NewReader(body))
+		if err != nil {
+			return nil, err
+		}
+		defer reader.Close()
+		return io.ReadAll(reader)
+	case "deflate":
+		reader, err := zlib.NewReader(bytes.NewReader(body))
+		if err != nil {
+			return nil, err
+		}
+		defer reader.Close()
+		return io.ReadAll(reader)
+	default:
+		return body, nil
+	}
+}
+
+// isTextContent 判断内容类型是否为文本
+func isTextContent(contentType string) bool {
+	if contentType == "" {
+		return true
+	}
+	mediaType, _, err := mime.ParseMediaType(contentType)
+	if err != nil {
+		return true
+	}
+	return strings.HasPrefix(mediaType, "text/") ||
+		strings.HasPrefix(mediaType, "application/json") ||
+		strings.HasPrefix(mediaType, "application/xml") ||
+		strings.HasPrefix(mediaType, "application/x-www-form-urlencoded")
+}
+
+// 获取响应体内容
+func getResponseBody(c *gin.Context, blw *bodyLogWriter) string {
+	responseBody := blw.body.String()
+
+	// 如果是 SSE 响应，使用特定的格式化
+	if strings.Contains(c.Writer.Header().Get("Content-Type"), "text/event-stream") {
+		return formatSSEResponse(responseBody)
+	}
+
+	// 处理压缩的响应
+	if encoding := c.Writer.Header().Get("Content-Encoding"); encoding != "" {
+		if decompressed, err := decompressBody(encoding, []byte(responseBody)); err == nil {
+			responseBody = string(decompressed)
+		}
+	}
+
+	// 判断是否需要 base64 编码
+	contentType := c.Writer.Header().Get("Content-Type")
+	if !isTextContent(contentType) {
+		return base64.StdEncoding.EncodeToString([]byte(responseBody))
+	}
+
+	return responseBody
 }
 
 // Middleware 创建日志中间件
@@ -69,6 +135,22 @@ func Middleware(cfg *config.Config) gin.HandlerFunc {
 		if c.Request.Body != nil {
 			requestBody, _ = io.ReadAll(c.Request.Body)
 			c.Request.Body = io.NopCloser(bytes.NewBuffer(requestBody))
+
+			// 处理压缩的内容
+			if encoding := c.Request.Header.Get("Content-Encoding"); encoding != "" {
+				if decompressed, err := decompressBody(encoding, requestBody); err == nil {
+					requestBody = decompressed
+				}
+			}
+		}
+
+		// 判断是否需要base64编码
+		var requestBodyStr string
+		contentType := c.Request.Header.Get("Content-Type")
+		if isTextContent(contentType) {
+			requestBodyStr = string(requestBody)
+		} else {
+			requestBodyStr = base64.StdEncoding.EncodeToString(requestBody)
 		}
 
 		// 记录请求日志
@@ -81,7 +163,7 @@ func Middleware(cfg *config.Config) gin.HandlerFunc {
 			"query":        c.Request.URL.RawQuery,
 			"client_ip":    c.ClientIP(),
 			"user_agent":   c.Request.UserAgent(),
-			"request_body": string(requestBody),
+			"request_body": requestBodyStr,
 			"headers":      c.Request.Header,
 		}
 
@@ -103,11 +185,8 @@ func Middleware(cfg *config.Config) gin.HandlerFunc {
 		endTime := time.Now()
 		latency := endTime.Sub(startTime)
 
-		// 获取响应体
-		responseBody := blw.body.String()
-		if strings.Contains(c.Writer.Header().Get("Content-Type"), "text/event-stream") {
-			responseBody = formatSSEResponse(responseBody)
-		}
+		// 获取并处理响应体
+		responseBody := getResponseBody(c, blw)
 
 		// 记录响应日志
 		responseLog := map[string]interface{}{
