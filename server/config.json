@@ -28,6 +28,10 @@
   },
   "rate_limit": {
     "requests_per_second": 10,
-    "burst": 20
+    "burst": 20,
+    "ip_limit": {
+      "requests_per_second": 2,
+      "burst": 4
+    }
   }
 } 

@@ -7,11 +7,13 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"relayapi/server/internal/config"
 	"relayapi/server/internal/handlers"
 	"relayapi/server/internal/middleware"
 	"relayapi/server/internal/services"
+
+	"github.com/gin-gonic/gin"
+	"golang.org/x/time/rate"
 )
 
 func main() {
@@ -50,8 +52,8 @@ func main() {
 	// 健康检查路由
 	router.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
-			"status": "ok",
-			"time":   time.Now().Format(time.RFC3339),
+			"status":  "ok",
+			"time":    time.Now().Format(time.RFC3339),
 			"version": cfg.Client.Version,
 		})
 	})
@@ -59,11 +61,18 @@ func main() {
 	// API 路由组
 	api := router.Group("/relayapi")
 	{
+		// 创建全局限流器和 IP 限流器
+		globalLimiter := rate.NewLimiter(rate.Limit(cfg.Server.RateLimit.RequestsPerSecond), cfg.Server.RateLimit.Burst)
+		ipLimiter := middleware.NewIPRateLimiter(
+			rate.Limit(cfg.Server.RateLimit.IPLimit.RequestsPerSecond),
+			cfg.Server.RateLimit.IPLimit.Burst,
+		)
+
+		// 添加限流中间件（在认证之前）
+		api.Use(middleware.RateLimit(globalLimiter, ipLimiter))
+
 		// 添加认证中间件
 		api.Use(middleware.TokenAuth(&cfg.Client))
-
-		// 添加速率限制中间件
-		api.Use(middleware.RateLimit())
 
 		// 所有 API 请求通过统一入口处理
 		api.Any("/*path", apiHandler.HandleRequest)
@@ -83,4 +92,4 @@ func main() {
 	if err := server.ListenAndServe(); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}
-} 
+}

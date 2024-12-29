@@ -126,11 +126,3 @@ func TokenAuth(cfg *config.ClientConfig) gin.HandlerFunc {
 		c.Next()
 	}
 }
-
-// RateLimit 限制请求频率的中间件
-func RateLimit() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		// TODO: 实现请求频率限制
-		c.Next()
-	}
-}

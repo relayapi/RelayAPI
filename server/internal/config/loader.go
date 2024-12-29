@@ -47,7 +47,11 @@ type ServerConfig struct {
 	} `json:"log"`
 	RateLimit struct {
 		RequestsPerSecond int `json:"requests_per_second"`
-		Burst            int `json:"burst"`
+		Burst             int `json:"burst"`
+		IPLimit           struct {
+			RequestsPerSecond int `json:"requests_per_second"`
+			Burst             int `json:"burst"`
+		} `json:"ip_limit"`
 	} `json:"rate_limit"`
 }
 
@@ -132,4 +136,4 @@ func LoadConfig(serverConfigPath string, clientConfigPath string) (*Config, erro
 	}
 
 	return config, nil
-} 
+}
