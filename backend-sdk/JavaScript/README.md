@@ -49,7 +49,7 @@ const client = new RelayAPIClient(config);
 const token = client.createToken({
     apiKey: 'your-api-key',
     maxCalls: 100,
-    expireDays: 1,
+    expireSeconds: 3600,
     provider: 'openai'
 });
 
@@ -121,8 +121,8 @@ Creates a new token.
 
 - `options.apiKey`: API key
 - `options.maxCalls`: Maximum number of calls (default: 100)
-- `options.expireDays`: Days until expiration (default: 1)
-- `options.provider`: Provider (default: 'dashscope')
+- `options.expireSeconds`: Seconds until expiration (default: 86400, 24 hours)
+- `options.provider`: Provider name or URL. When a URL is provided, it will be used directly as the provider endpoint. Supported provider names: 'dashscope', 'openai', etc.
 - `options.extInfo`: Extended information (optional)
 
 ##### generateUrl(endpoint, token)

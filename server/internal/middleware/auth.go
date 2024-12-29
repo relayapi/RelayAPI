@@ -54,7 +54,7 @@ func TokenAuth(cfg *config.ClientConfig) gin.HandlerFunc {
 			encryptedToken += strings.Repeat("=", 4-padding)
 		}
 
-		// 打印调试信息
+		// //打印调试信息
 		// fmt.Printf("Token length: %d\n", len(encryptedToken))
 		// fmt.Printf("First 10 bytes: %v\n", []byte(encryptedToken[:10]))
 		// fmt.Printf("Full token: %s\n", encryptedToken)
@@ -102,6 +102,7 @@ func TokenAuth(cfg *config.ClientConfig) gin.HandlerFunc {
 			c.Abort()
 			return
 		}
+		fmt.Printf("token: %+v\n", token)
 
 		// 验证令牌有效性
 		if !token.IsValid() {

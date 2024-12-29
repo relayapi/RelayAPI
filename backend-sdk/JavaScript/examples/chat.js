@@ -29,7 +29,7 @@ async function main() {
         const token = client.createToken({
             apiKey: apiKey,
             maxCalls: 100,
-            expireDays: 1,
+            expireSeconds: 3600,
             provider: 'dashscope'
         });
 

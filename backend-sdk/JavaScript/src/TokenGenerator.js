@@ -64,12 +64,12 @@ export class TokenGenerator {
     createToken({
         apiKey,
         maxCalls = 100,
-        expireDays = 1,
+        expireSeconds = 86400,
         provider = 'dashscope',
         extInfo = ''
     }) {
         const now = new Date();
-        const expireTime = new Date(now.getTime() + expireDays * 24 * 60 * 60 * 1000);
+        const expireTime = new Date(now.getTime() + expireSeconds * 1000);
 
         return {
             id: `token-${Date.now()}`,
