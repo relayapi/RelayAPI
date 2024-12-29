@@ -5,6 +5,7 @@ import (
 	"compress/gzip"
 	"compress/zlib"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"io"
 	"mime"
@@ -212,11 +213,33 @@ func Middleware(cfg *config.Config) gin.HandlerFunc {
 // formatSSEResponse 格式化SSE响应数据
 func formatSSEResponse(response string) string {
 	lines := strings.Split(response, "\n")
-	var events []string
+	var content strings.Builder
+
 	for _, line := range lines {
 		if strings.HasPrefix(line, "data: ") {
-			events = append(events, strings.TrimPrefix(line, "data: "))
+			data := strings.TrimPrefix(line, "data: ")
+			if data == "[DONE]" {
+				continue
+			}
+
+			var event struct {
+				Choices []struct {
+					Delta struct {
+						Content string `json:"content"`
+					} `json:"delta"`
+				} `json:"choices"`
+			}
+
+			if err := json.Unmarshal([]byte(data), &event); err == nil {
+				if len(event.Choices) > 0 && event.Choices[0].Delta.Content != "" {
+					content.WriteString(event.Choices[0].Delta.Content)
+				}
+			} else {
+				// JSON 解析失败时，保留原始数据
+				content.WriteString(data)
+			}
 		}
 	}
-	return "[" + strings.Join(events, ",") + "]"
+
+	return content.String()
 }
