@@ -5,7 +5,7 @@
     "read_timeout": 30,
     "write_timeout": 30,
     "max_header_bytes": 1048576,
-    "debug": false
+    "debug": true
   },
   "log": {
     "console": true,

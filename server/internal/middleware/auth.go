@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"encoding/base64"
-	"fmt"
 	"net/http"
 	"strings"
 
@@ -63,8 +62,8 @@ func TokenAuth(cfg *config.ClientConfig) gin.HandlerFunc {
 		if extPath != "" {
 			c.Set("ext_path", strings.TrimRight(extPath, "="))
 		}
-		fmt.Printf("extPath: %s\n", extPath)
-		fmt.Printf("encryptedToken: %s\n", encryptedToken)
+		// fmt.Printf("extPath: %s\n", extPath)
+		// fmt.Printf("encryptedToken: %s\n", encryptedToken)
 		// Base64 URL 安全解码
 		tokenBytes, err := base64.URLEncoding.DecodeString(encryptedToken)
 		if err != nil {
@@ -102,7 +101,7 @@ func TokenAuth(cfg *config.ClientConfig) gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-		fmt.Printf("token: %+v\n", token)
+		// fmt.Printf("token: %+v\n", token)
 
 		// 验证令牌有效性
 		if !token.IsValid() {

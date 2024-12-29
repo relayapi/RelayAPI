@@ -89,7 +89,7 @@ func (h *APIHandler) HandleRequest(c *gin.Context) {
 	// 设置 Authorization 头
 	headers["Authorization"] = fmt.Sprintf("Bearer %s", apiKey)
 
-	fmt.Printf("Provider: %s, Target URL: %s\n", provider, targetURL)
+	// fmt.Printf("Provider: %s, Target URL: %s\n", provider, targetURL)
 
 	resp, err := h.proxyService.ProxyRequest(c.Request.Method, targetURL, headers, body)
 	if err != nil {
