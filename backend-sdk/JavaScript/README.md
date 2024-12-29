@@ -1,18 +1,18 @@
 # RelayAPI JavaScript SDK
 
-RelayAPI JavaScript SDK 是一个用于与 RelayAPI 服务器进行交互的客户端库。它提供了简单的接口来生成 API URL、创建令牌，以及发送各种 API 请求。
+RelayAPI JavaScript SDK is a client library for interacting with RelayAPI servers. It provides simple interfaces for generating API URLs, creating tokens, and sending various API requests.
 
-## 安装
+## Installation
 
-使用 npm 安装：
+Install using npm:
 
 ```bash
 npm install relayapi-sdk
 ```
 
-## 配置
+## Configuration
 
-SDK 需要一个配置对象来初始化。你可以从配置文件（`.rai`）加载配置，或直接传入配置对象。配置格式示例：
+The SDK requires a configuration object for initialization. You can load the configuration from a file (`.rai`) or pass it directly as an object. Example configuration format:
 
 ```json
 {
@@ -30,22 +30,22 @@ SDK 需要一个配置对象来初始化。你可以从配置文件（`.rai`）�
 }
 ```
 
-## 使用示例
+## Usage Examples
 
-### 基本用法
+### Basic Usage
 
 ```javascript
 import { RelayAPIClient } from 'relayapi-sdk';
 import fs from 'fs/promises';
 
-// 从配置文件加载配置
+// Load configuration from file
 const configContent = await fs.readFile('config.rai', 'utf-8');
 const config = JSON.parse(configContent);
 
-// 创建客户端实例
+// Create client instance
 const client = new RelayAPIClient(config);
 
-// 创建令牌
+// Create token
 const token = client.createToken({
     apiKey: 'your-api-key',
     maxCalls: 100,
@@ -53,11 +53,11 @@ const token = client.createToken({
     provider: 'openai'
 });
 
-// 生成 API URL
+// Generate API URL
 const url = client.generateUrl('v1/chat/completions', token);
 ```
 
-### 聊天请求
+### Chat Request
 
 ```javascript
 const response = await client.chat({
@@ -72,7 +72,7 @@ const response = await client.chat({
 });
 ```
 
-### 图像生成
+### Image Generation
 
 ```javascript
 const response = await client.generateImage({
@@ -85,7 +85,7 @@ const response = await client.generateImage({
 });
 ```
 
-### 嵌入向量生成
+### Embedding Generation
 
 ```javascript
 const response = await client.createEmbedding({
@@ -95,79 +95,79 @@ const response = await client.createEmbedding({
 });
 ```
 
-### 健康检查
+### Health Check
 
 ```javascript
 const status = await client.healthCheck();
 ```
 
-## API 参考
+## API Reference
 
 ### RelayAPIClient
 
-#### 构造函数
+#### Constructor
 
 ```javascript
 new RelayAPIClient(config)
 ```
 
-- `config`: 字符串（配置文件路径）或对象（配置对象）
+- `config`: String (config file path) or Object (config object)
 
-#### 方��
+#### Methods
 
 ##### createToken(options)
 
-创建新的令牌。
+Creates a new token.
 
-- `options.apiKey`: API 密钥
-- `options.maxCalls`: 最大调用次数（默认：100）
-- `options.expireDays`: 过期天数（默认：1）
-- `options.provider`: 提供商（默认：'dashscope'）
-- `options.extInfo`: 扩展信息（可选）
+- `options.apiKey`: API key
+- `options.maxCalls`: Maximum number of calls (default: 100)
+- `options.expireDays`: Days until expiration (default: 1)
+- `options.provider`: Provider (default: 'dashscope')
+- `options.extInfo`: Extended information (optional)
 
 ##### generateUrl(endpoint, token)
 
-生成 API URL。
+Generates an API URL.
 
-- `endpoint`: API 端点路径
-- `token`: 令牌字符串
+- `endpoint`: API endpoint path
+- `token`: Token string
 
 ##### chat(options)
 
-发送聊天请求。
+Sends a chat request.
 
-- `options.messages`: 消息数组
-- `options.model`: 模型名称（默认：'gpt-3.5-turbo'）
-- `options.temperature`: 温度值（默认：0.7）
-- `options.maxTokens`: 最大令牌数（默认：1000）
-- `options.token`: 令牌字符串
+- `options.messages`: Array of messages
+- `options.model`: Model name (default: 'gpt-3.5-turbo')
+- `options.temperature`: Temperature value (default: 0.7)
+- `options.maxTokens`: Maximum tokens (default: 1000)
+- `options.token`: Token string
 
 ##### generateImage(options)
 
-生成图像。
+Generates images.
 
-- `options.prompt`: 图像描述
-- `options.model`: 模型名称（默认：'dall-e-3'）
-- `options.size`: 图像尺寸（默认：'1024x1024'）
-- `options.quality`: 图像质量（默认：'standard'）
-- `options.n`: 生成数量（默认：1）
-- `options.token`: 令牌字符串
+- `options.prompt`: Image description
+- `options.model`: Model name (default: 'dall-e-3')
+- `options.size`: Image size (default: '1024x1024')
+- `options.quality`: Image quality (default: 'standard')
+- `options.n`: Number of images to generate (default: 1)
+- `options.token`: Token string
 
 ##### createEmbedding(options)
 
-生成嵌入向量。
+Generates embeddings.
 
-- `options.input`: 输入文本
-- `options.model`: 模型名称（默认：'text-embedding-ada-002'）
-- `options.token`: 令牌字符串
+- `options.input`: Input text
+- `options.model`: Model name (default: 'text-embedding-ada-002')
+- `options.token`: Token string
 
 ##### healthCheck()
 
-检查服务器健康状态。
+Checks server health status.
 
-## 错误处理
+## Error Handling
 
-SDK 中的所有方法���会在发生错误时抛出异常。建议使用 try-catch 块来处理可能的错误：
+All methods in the SDK will throw exceptions when errors occur. It's recommended to use try-catch blocks to handle potential errors:
 
 ```javascript
 try {
@@ -177,12 +177,12 @@ try {
 }
 ```
 
-## 示例程序
+## Example Programs
 
-查看 `examples` 目录中的示例程序，了解更多使用方法：
+Check the example programs in the `examples` directory for more usage examples:
 
-- `chat.js`: 展示了如何使用 SDK 进行聊天、生成图像和嵌入向量等操作
+- `chat.js`: Demonstrates how to use the SDK for chat, image generation, and embeddings
 
-## 许可证
+## License
 
 MIT

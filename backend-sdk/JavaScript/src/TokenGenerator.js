@@ -3,8 +3,9 @@ import fs from 'fs/promises';
 
 export class TokenGenerator {
     /**
+     * Initialize token generator
      * 初始化令牌生成器
-     * @param {string|object} config 配置文件路径或配置对象
+     * @param {string|object} config Configuration file path or configuration object / 配置文件路径或配置对象
      */
     constructor(config) {
         this.config = null;
@@ -12,17 +13,19 @@ export class TokenGenerator {
     }
 
     /**
+     * Initialize configuration
      * 初始化配置
-     * @param {string|object} config 配置文件路径或配置对象
+     * @param {string|object} config Configuration file path or configuration object / 配置文件路径或配置对象
      */
     async initialize(config) {
         this.config = config;
 
-        // 验证配置
+        // Validate configuration / 验证配置
         this.validateConfig();
     }
 
     /**
+     * Validate configuration
      * 验证配置
      */
     validateConfig() {
@@ -39,22 +42,24 @@ export class TokenGenerator {
     }
 
     /**
+     * Generate initialization vector
      * 生成初始化向量
-     * @returns {WordArray} 生成的 IV
+     * @returns {WordArray} Generated IV / 生成的 IV
      */
     generateIV() {
-        // 生成随机 IV
+        // Generate random IV / 生成随机 IV
         const iv = CryptoJS.lib.WordArray.random(16);
-        // 使用 IV 种子进行混合
+        // Mix with IV seed / 使用 IV 种子进行混合
         const ivSeed = CryptoJS.enc.Utf8.parse(this.config.crypto.aes_iv_seed);
         const words = iv.words.map((word, i) => word ^ ivSeed.words[i]);
         return CryptoJS.lib.WordArray.create(words, 16);
     }
 
     /**
+     * Create token data
      * 创建令牌数据
-     * @param {object} options 令牌选项
-     * @returns {object} 令牌数据
+     * @param {object} options Token options / 令牌选项
+     * @returns {object} Token data / 令牌数据
      */
     createToken({
         apiKey,
@@ -78,40 +83,42 @@ export class TokenGenerator {
     }
 
     /**
+     * Encrypt token data
      * 加密令牌数据
-     * @param {object} tokenData 令牌数据
-     * @returns {string} 加密后的令牌字符串
+     * @param {object} tokenData Token data / 令牌数据
+     * @returns {string} Encrypted token string / 加密后的令牌字符串
      */
     encryptToken(tokenData) {
-        // 序列化令牌数据
+        // Serialize token data / 序列化令牌数据
         const jsonData = JSON.stringify(tokenData);
         
-        // 生成 IV
+        // Generate IV / 生成 IV
         const iv = this.generateIV();
         
-        // 解码 AES 密钥
+        // Decode AES key / 解码 AES 密钥
         const key = CryptoJS.enc.Hex.parse(this.config.crypto.aes_key);
         
-        // 加密数据
+        // Encrypt data / 加密数据
         const encrypted = CryptoJS.AES.encrypt(jsonData, key, {
             iv: iv,
             mode: CryptoJS.mode.CBC,
             padding: CryptoJS.pad.Pkcs7
         });
         
-        // 组合 IV 和加密数据
+        // Combine IV and encrypted data / 组合 IV 和加密数据
         const combined = CryptoJS.lib.WordArray.create()
             .concat(iv)
             .concat(encrypted.ciphertext);
         
-        // Base64 URL 安全编码
+        // Base64 URL safe encoding / Base64 URL 安全编码
         return CryptoJS.enc.Base64url.stringify(combined);
     }
 
     /**
+     * Get server URL
      * 获取服务器 URL
-     * @param {string} path API 路径
-     * @returns {string} 完整的服务器 URL
+     * @param {string} path API path / API 路径
+     * @returns {string} Complete server URL / 完整的服务器 URL
      */
     getServerUrl(path = '') {
         const { host, port, base_path } = this.config.server;

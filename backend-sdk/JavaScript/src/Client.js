@@ -3,17 +3,19 @@ import { TokenGenerator } from './TokenGenerator.js';
 
 export class RelayAPIClient {
     /**
+     * Initialize RelayAPI client
      * 初始化 RelayAPI 客户端
-     * @param {object} config 配置对象
+     * @param {object} config Configuration object / 配置对象
      */
     constructor(config) {
         this.tokenGenerator = new TokenGenerator(config);
     }
 
     /**
+     * Create token
      * 创建令牌
-     * @param {object} options 令牌选项
-     * @returns {string} 加密的令牌字符串
+     * @param {object} options Token options / 令牌选项
+     * @returns {string} Encrypted token string / 加密的令牌字符串
      */
     createToken(options) {
         const tokenData = this.tokenGenerator.createToken(options);
@@ -21,10 +23,11 @@ export class RelayAPIClient {
     }
 
     /**
+     * Generate API URL
      * 生成 API URL
-     * @param {string} endpoint API 端点
-     * @param {string} token 令牌
-     * @returns {string} 完整的 API URL
+     * @param {string} endpoint API endpoint / API 端点
+     * @param {string} token Token / 令牌
+     * @returns {string} Complete API URL / 完整的 API URL
      */
     generateUrl(endpoint, token) {
         const baseUrl = this.tokenGenerator.getServerUrl(endpoint);
@@ -32,9 +35,10 @@ export class RelayAPIClient {
     }
 
     /**
+     * Send chat request
      * 发送聊天请求
-     * @param {object} options 请求选项
-     * @returns {Promise<object>} 响应数据
+     * @param {object} options Request options / 请求选项
+     * @returns {Promise<object>} Response data / 响应数据
      */
     async chat(options) {
         const {
@@ -61,9 +65,10 @@ export class RelayAPIClient {
     }
 
     /**
+     * Generate image
      * 生成图像
-     * @param {object} options 请求选项
-     * @returns {Promise<object>} 响应数据
+     * @param {object} options Request options / 请求选项
+     * @returns {Promise<object>} Response data / 响应数据
      */
     async generateImage(options) {
         const {
@@ -92,9 +97,10 @@ export class RelayAPIClient {
     }
 
     /**
+     * Generate embeddings
      * 生成嵌入向量
-     * @param {object} options 请求选项
-     * @returns {Promise<object>} 响应数据
+     * @param {object} options Request options / 请求选项
+     * @returns {Promise<object>} Response data / 响应数据
      */
     async createEmbedding(options) {
         const {
@@ -117,8 +123,9 @@ export class RelayAPIClient {
     }
 
     /**
+     * Check server health status
      * 检查服务器健康状态
-     * @returns {Promise<object>} 健康状态数据
+     * @returns {Promise<object>} Health status data / 健康状态数据
      */
     async healthCheck() {
         const url = this.tokenGenerator.getServerUrl('health');
