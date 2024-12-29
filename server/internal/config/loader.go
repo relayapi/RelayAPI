@@ -29,21 +29,22 @@ type ServerConfig struct {
 		ReadTimeout    int    `json:"read_timeout"`
 		WriteTimeout   int    `json:"write_timeout"`
 		MaxHeaderBytes int    `json:"max_header_bytes"`
+		Debug          bool   `json:"debug"`
 	} `json:"server"`
-	Database struct {
-		Host            string `json:"host"`
-		Port            int    `json:"port"`
-		User            string `json:"user"`
-		Password        string `json:"password"`
-		DBName          string `json:"dbname"`
-		MaxOpenConns    int    `json:"max_open_conns"`
-		MaxIdleConns    int    `json:"max_idle_conns"`
-		ConnMaxLifetime int    `json:"conn_max_lifetime"`
-	} `json:"database"`
 	Log struct {
-		Level  string `json:"level"`
-		Format string `json:"format"`
-		Output string `json:"output"`
+		Console  bool `json:"console"`
+		Database struct {
+			Enabled          bool   `json:"enabled"`
+			ConnectionString string `json:"connection_string"`
+		} `json:"database"`
+		Web struct {
+			Enabled     bool   `json:"enabled"`
+			CallbackURL string `json:"callback_url"`
+		} `json:"web"`
+		Parquet struct {
+			Enabled  bool   `json:"enabled"`
+			FilePath string `json:"file_path"`
+		} `json:"parquet"`
 	} `json:"log"`
 	RateLimit struct {
 		RequestsPerSecond int `json:"requests_per_second"`

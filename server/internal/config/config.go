@@ -19,18 +19,21 @@ func ValidateConfig(cfg *Config) error {
 		return fmt.Errorf("invalid write timeout")
 	}
 
-	// 验证数据库配置
-	if cfg.Server.Database.Port <= 0 {
-		return fmt.Errorf("invalid database port")
+	// 验证日志配置
+	if cfg.Server.Log.Database.Enabled {
+		if cfg.Server.Log.Database.ConnectionString == "" {
+			return fmt.Errorf("database logging enabled but connection string is empty")
+		}
 	}
-	if cfg.Server.Database.MaxOpenConns <= 0 {
-		return fmt.Errorf("invalid max open connections")
+	if cfg.Server.Log.Web.Enabled {
+		if cfg.Server.Log.Web.CallbackURL == "" {
+			return fmt.Errorf("web logging enabled but callback URL is empty")
+		}
 	}
-	if cfg.Server.Database.MaxIdleConns <= 0 {
-		return fmt.Errorf("invalid max idle connections")
-	}
-	if cfg.Server.Database.ConnMaxLifetime <= 0 {
-		return fmt.Errorf("invalid connection max lifetime")
+	if cfg.Server.Log.Parquet.Enabled {
+		if cfg.Server.Log.Parquet.FilePath == "" {
+			return fmt.Errorf("parquet logging enabled but file path is empty")
+		}
 	}
 
 	// 验证速率限制配置

@@ -34,7 +34,7 @@ func main() {
 	}
 
 	// 设置 Gin 模式
-	if cfg.Server.Log.Level == "debug" {
+	if cfg.Server.Server.Debug {
 		gin.SetMode(gin.DebugMode)
 	} else {
 		gin.SetMode(gin.ReleaseMode)

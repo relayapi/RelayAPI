@@ -4,27 +4,23 @@
     "port": 8080,
     "read_timeout": 30,
     "write_timeout": 30,
-    "max_header_bytes": 1048576
-  },
-  "database": {
-    "host": "localhost",
-    "port": 5432,
-    "user": "relayapi",
-    "password": "relayapi",
-    "dbname": "relayapi",
-    "max_open_conns": 10,
-    "max_idle_conns": 5,
-    "conn_max_lifetime": 3600
-  },
-  "crypto": {
-    "method": "aes",
-    "aes_key": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
-    "aes_iv_seed": "fedcba9876543210"
+    "max_header_bytes": 1048576,
+    "debug": false
   },
   "log": {
-    "level": "info",
-    "format": "json",
-    "output": "stdout"
+    "console": true,
+    "database": {
+      "enabled": false,
+      "connection_string": "postgres://user:password@localhost:5432/dbname"
+    },
+    "web": {
+      "enabled": false,
+      "callback_url": "http://example.com/log"
+    },
+    "parquet": {
+      "enabled": false,
+      "file_path": "/path/to/logs/output.parquet"
+    }
   },
   "rate_limit": {
     "requests_per_second": 10,
