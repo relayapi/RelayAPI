@@ -30,7 +30,7 @@ func Middleware(cfg *config.Config) gin.HandlerFunc {
 
 	// 根据配置创建日志写入器
 	if cfg.Server.Log.Console {
-		writers = append(writers, NewAsyncLogWriter(&ConsoleLogWriter{}, 1000))
+		writers = append(writers, NewAsyncLogWriter(NewConsoleLogWriter(), 1000))
 	}
 
 	if cfg.Server.Log.Database.Enabled {

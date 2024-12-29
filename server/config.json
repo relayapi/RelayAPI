@@ -5,14 +5,14 @@
     "read_timeout": 30,
     "write_timeout": 30,
     "max_header_bytes": 1048576,
-    "debug": true
+    "debug": false
   },
   "log": {
     "console": true,
     "database": {
-      "enabled": false,
+      "enabled": true,
       "type": "postgres",
-      "connection_string": "postgres://user:password@localhost:5432/dbname"
+      "connection_string": "user=postgres password=postgres dbname=water host=localhost port=5432 sslmode=disable"
     },
     "web": {
       "enabled": false,
