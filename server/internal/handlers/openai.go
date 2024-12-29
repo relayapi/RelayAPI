@@ -8,13 +8,9 @@ import (
 
 	"relayapi/server/internal/models"
 	"relayapi/server/internal/services"
+	"relayapi/server/internal/utils"
 
 	"github.com/gin-gonic/gin"
-)
-
-const (
-	OpenAIBaseURL    = "https://api.openai.com/v1"
-	DashScopeBaseURL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 )
 
 // APIHandler 处理 API 请求
@@ -31,14 +27,7 @@ func NewAPIHandler(proxyService *services.ProxyService) *APIHandler {
 
 // getBaseURL 根据提供者获取基础 URL
 func (h *APIHandler) getBaseURL(provider string) string {
-	switch provider {
-	case "openai":
-		return OpenAIBaseURL
-	case "dashscope":
-		return DashScopeBaseURL
-	default:
-		return DashScopeBaseURL // 默认使用 DashScope
-	}
+	return utils.GetProviderBaseURL(provider)
 }
 
 // HandleRequest 处理 API 请求

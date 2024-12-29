@@ -269,3 +269,42 @@
    - 统一的 UTC 时间转换函数
    - 时间格式化工具
    - 时区处理辅助函数
+
+## 已完成的步骤
+
+1. 重构了 `server/internal/handlers/openai.go` 文件中的 provider URL 处理逻辑
+   - 添加了完整的 `ProviderURLs` 映射，支持多个 AI 服务提供商
+   - 重写了 `getBaseURL` 函数，使用映射查找替代 switch 语句
+   - 保持了默认行为，找不到对应 URL 时返回原始 provider 值
+
+## 下一步计划
+
+1. 考虑为不同的 AI 提供商添加特定的请求处理逻辑（如果需要）
+2. 添加配置验证，确保必需的 provider 配置（如 Azure OpenAI 的 resource name）已正确设置
+3. 为新增的 provider 添加相应的测试用例
+4. 更新文档，说明如何配置和使用新增的 AI 提供商服务
+
+# 已完成的步骤
+
+1. 重构了 provider URL 处理逻辑
+   - 创建了 `server/internal/utils/provider_urls.go` 文件
+   - 将 `ProviderURLs` 映射移动到工具类中
+   - 添加了 `GetProviderBaseURL` 工具函数
+   - 修改了 `openai.go` 使用新的工具类
+
+# 下一步计划
+
+1. 为工具类添加单元测试
+   - 测试 `GetProviderBaseURL` 函数的各种情况
+   - 测试无效 provider 的处理
+   - 测试特殊字符的处理
+
+2. 考虑添加更多工具函数
+   - 添加 provider 验证函数
+   - 添加 URL 参数处理函数
+   - 添加 URL 模板替换函数（用于处理 Azure OpenAI 等需要替换参数的 URL）
+
+3. 完善文档
+   - 添加工具类使用说明
+   - 更新 API 文档
+   - 添加新 provider 配置说明
