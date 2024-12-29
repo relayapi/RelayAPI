@@ -10,6 +10,7 @@ import (
 	"relayapi/server/internal/config"
 	"relayapi/server/internal/handlers"
 	"relayapi/server/internal/middleware"
+	"relayapi/server/internal/middleware/logger"
 	"relayapi/server/internal/services"
 
 	"github.com/gin-gonic/gin"
@@ -42,6 +43,9 @@ func main() {
 
 	// 创建 Gin 引擎
 	router := gin.Default()
+
+	// 添加日志中间件
+	router.Use(logger.Middleware(cfg))
 
 	// 创建代理服务
 	proxyService := services.NewProxyService()

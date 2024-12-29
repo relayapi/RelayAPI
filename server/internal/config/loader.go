@@ -35,6 +35,7 @@ type ServerConfig struct {
 		Console  bool `json:"console"`
 		Database struct {
 			Enabled          bool   `json:"enabled"`
+			Type             string `json:"type"`
 			ConnectionString string `json:"connection_string"`
 		} `json:"database"`
 		Web struct {

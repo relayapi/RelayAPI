@@ -11,6 +11,7 @@
     "console": true,
     "database": {
       "enabled": false,
+      "type": "postgres",
       "connection_string": "postgres://user:password@localhost:5432/dbname"
     },
     "web": {
