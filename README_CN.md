@@ -22,7 +22,9 @@
 
 ## 🌟 特性
 
-- 🔒 **零泄露风险**: API Key 完全在服务端加密存储，前端无法接触敏感信息
+RelayAPI 是一个安全的 API 代理服务，帮助您在前端安全地使用各种 AI 服务，无需暴露 API 密钥。
+
+- 🔒 **零泄露风险**: 完全在服务端加密存储，API Key 永不暴露给前端
 - 🚀 **高性能设计**: 基于 Go 实现的高性能代理服务，支持大规模并发
 - 🎯 **精准控制**: 支持按次数、时间、IP 等多维度的访问控制
 - 🔌 **即插即用**: 支持 90+ AI 服务商，前端零改动，仅需修改 BaseURL
@@ -30,22 +32,24 @@
 - 🛡️ **多重防护**: 支持 IP 白名单、调用频率限制、并发控制等安全特性
 - 🌐 **多语言 SDK**: 提供 Node.js、Python、Go 等多语言 SDK
 
+
 ## 🎯 它是如何工作的？
 
 ```mermaid
 sequenceDiagram
-    participant F as Frontend
-    participant B as Backend
-    participant R as RelayAPI
-    participant A as AI Service
+    participant Frontend as 前端
+    participant Backend as 后端
+    participant RelayAPI as RelayAPI服务
+    participant AI Service as AI服务
 
-    B->>R: 1. 获取公钥
-    B->>B: 2. 生成加密令牌
-    B->>F: 3. 返回令牌
-    F->>R: 4. API 调用 + 令牌
-    R->>R: 5. 验证和解密
-    R->>A: 6. 转发请求
-    A->>F: 7. 返回结果
+    Note over Backend,RelayAPI: 共享相同的 .rai 文件
+    Backend->>RelayAPI: 1. 使用 .rai 启动服务器
+    Backend->>Backend: 2. 用 API key 生成 URL
+    Backend->>Frontend: 3. 发送基础 URL
+    Frontend->>RelayAPI: 4. 发起 API 调用
+    RelayAPI->>AI Service: 5. 使用真实 API key 转发
+    AI Service->>RelayAPI: 6. 返回响应
+    RelayAPI->>Frontend: 7. 转发响应
 ```
 
 ## 🚀 快速开始
@@ -54,7 +58,7 @@ sequenceDiagram
 
 ```bash
 # RelayAPI Server 快速安装
-curl -fsSL https://relayapi.com/get_relayapi.sh | sh
+curl -fsSL https://raw.githubusercontent.com/relayapi/RelayAPI/refs/heads/main/get_relayapi.sh | sh
 ```
 
 ```bash
@@ -62,6 +66,64 @@ curl -fsSL https://relayapi.com/get_relayapi.sh | sh
 npm install relayapi-sdk    # Node.js (@https://www.npmjs.com/package/relayapi-sdk)
 pip install relayapi-sdk    # Python (@https://pypi.org/project/relayapi-sdk/)
 ```
+
+## 三步上手 RelayAPI
+
+### 第一步：启动服务器
+
+创建 `default.rai` 文件，设置加密参数：
+
+```json
+{
+    // 前后端共享相同的 .rai 文件
+  "crypto": {
+    "method": "aes",
+    "aes_key": "你的密钥",
+    "aes_iv_seed": "你的种子值"
+  }
+}
+```
+
+启动服务器：
+
+```bash
+relayapi-server -rai ./rai -d
+```
+
+### 第二步：生成基础 URL（后端）
+
+在后端代码中使用相同的 `default.rai` 文件：
+
+```python
+from relayapi_sdk import RelayAPIClient
+
+client = RelayAPIClient("default.rai")
+base_url = client.generate_url(
+    api_key="你的-openai-api-key",
+    max_calls=100,
+    expire_seconds=3600
+)
+# 将 base_url 发送给前端
+```
+
+### 第三步：前端使用
+
+在前端代码中使用基础 URL：
+
+```javascript
+import OpenAI from 'openai';
+
+const openai = new OpenAI({
+    baseURL: '从后端获取的base_url',
+    apiKey: '不需要填写api-key'
+});
+
+const response = await openai.chat.completions.create({
+    model: 'gpt-3.5-turbo',
+    messages: [{ role: 'user', content: '你好！' }]
+});
+```
+
 
 ### 配置
 
@@ -80,53 +142,6 @@ RelayAPI 需要两种配置文件：
 
 详细配置选项和示例请参考[配置指南](docs/configuration_cn.md)。
 
-### 后端使用示例
-
-```typescript
-import { RelayAPIClient } from 'relayapi-sdk';
-import fs from 'fs/promises';
-
-// 加载配置文件
-const configContent = await fs.readFile('default.rai', 'utf-8');
-const config = JSON.parse(configContent);
-
-// 创建客户端实例
-const client = new RelayAPIClient(config);
-
-// 生成加密令牌
-const token = client.createToken({
-    apiKey: 'your-api-key',     // API Key
-    maxCalls: 100,              // 最大调用次数
-    expireSeconds: 3600,        // 有效期（秒）
-    provider: 'openai'          // AI 服务商
-});
-
-// 生成 API URL
-const baseUrl = client.generateUrl(token);
-console.log('Base URL:', baseUrl);
-// 输出示例: http://localhost:8840/relayapi/?token=xxxxx&rai_hash=xxxxx
-
-// 返回给前端
-return { baseUrl, token };
-```
-
-### 前端使用示例
-
-```typescript
-import OpenAI from 'openai';
-
-const openai = new OpenAI({
-    baseURL: baseUrl,
-    apiKey: 'not-needed'  // API Key 已包含在 token 中
-});
-
-const response = await openai.chat.completions.create({
-    messages: [{ role: 'user', content: 'Hello!' }],
-    model: 'gpt-3.5-turbo',
-    temperature: 0.7,
-    maxTokens: 1000
-});
-```
 
 ## 🌈 支持的 AI 服务商
 
@@ -189,3 +204,95 @@ const response = await openai.chat.completions.create({
 ## 📄 开源协议
 
 本项目采用 [MIT](LICENSE) 开源协议。
+
+# RelayAPI
+
+[English](README.md)
+
+RelayAPI 是一个安全的 API 代理服务，帮助您在前端安全地使用各种 AI 服务，无需暴露 API 密钥。
+
+## 三步上手 RelayAPI
+
+### 第一步：启动服务器
+创建 `default.rai` 文件，设置加密参数：
+```json
+{
+  "crypto": {
+    "method": "aes",
+    "aes_key": "你的密钥",
+    "aes_iv_seed": "你的种子值"
+  }
+}
+```
+启动服务器：
+```bash
+relayapi-server -rai ./rai -d
+```
+
+### 第二步：生成基础 URL（后端）
+在后端代码中使用相同的 `default.rai` 文件：
+```python
+from relayapi_sdk import RelayAPIClient
+
+client = RelayAPIClient("default.rai")
+base_url = client.generate_url(
+    api_key="你的-openai-api-key",
+    max_calls=100,
+    expire_seconds=3600
+)
+# 将 base_url 发送给前端
+```
+
+### 第三步：前端使用
+在前端代码中使用基础 URL：
+```javascript
+import OpenAI from 'openai';
+
+const openai = new OpenAI({
+    baseURL: '从后端获取的base_url',
+    apiKey: '不需要填写api-key'
+});
+
+const response = await openai.chat.completions.create({
+    model: 'gpt-3.5-turbo',
+    messages: [{ role: 'user', content: '你好！' }]
+});
+```
+
+
+### 工作原理
+
+```mermaid
+sequenceDiagram
+    participant Frontend as 前端
+    participant Backend as 后端
+    participant RelayAPI as RelayAPI服务
+    participant AI Service as AI服务
+
+    Note over Backend,RelayAPI: 共享相同的 .rai 文件
+    Backend->>RelayAPI: 1. 使用 .rai 启动服务器
+    Backend->>Backend: 2. 用 API key 生成 URL
+    Backend->>Frontend: 3. 发送基础 URL
+    Frontend->>RelayAPI: 4. 发起 API 调用
+    RelayAPI->>AI Service: 5. 使用真实 API key 转发
+    AI Service->>RelayAPI: 6. 返回响应
+    RelayAPI->>Frontend: 7. 转发响应
+```
+
+主要优势：
+- 🔒 API 密钥永不暴露给前端
+- 🎯 精细的访问控制
+- 🚀 简单易用，快速部署
+
+## 安装
+
+```bash
+# RelayAPI 服务器快速安装
+curl -fsSL https://relayapi.com/get_relayapi.sh | sh
+```
+
+```bash
+# 后端 SDK 安装
+npm install relayapi-sdk    # Node.js (@https://www.npmjs.com/package/relayapi-sdk)
+pip install relayapi-sdk    # Python (@https://pypi.org/project/relayapi-sdk/)
+```
