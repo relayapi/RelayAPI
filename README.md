@@ -54,8 +54,8 @@ sequenceDiagram
 
 ### Installation
 
-```bash
 # Quick installation of RelayAPI Server
+```bash
 curl -fsSL https://raw.githubusercontent.com/relayapi/RelayAPI/refs/heads/main/get_relayapi.sh | sh
 ```
 
