@@ -34,6 +34,9 @@ async function main() {
         });
 
         console.log('Token created:', token);
+        var url = client.generateUrl(token);
+        console.log('Token hash:', token.hash);
+        console.log('Token url:', url);
 
         // Check server health status
         // 检查服务器健康状态
@@ -55,6 +58,7 @@ async function main() {
         });
 
         console.log('Chat response:', chatResponse);
+        
 
         // Generate image
         // 生成图像

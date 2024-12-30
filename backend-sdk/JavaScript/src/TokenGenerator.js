@@ -22,6 +22,11 @@ export class TokenGenerator {
 
         // Validate configuration / 验证配置
         this.validateConfig();
+
+        // Generate config hash / 生成配置哈希
+        const { method, aes_key, aes_iv_seed } = this.config.crypto;
+        const data = method + aes_key + aes_iv_seed;
+        this.hash = CryptoJS.SHA256(data).toString(CryptoJS.enc.Hex);
     }
 
     /**

@@ -25,13 +25,13 @@ export class RelayAPIClient {
     /**
      * Generate API URL
      * 生成 API URL
-     * @param {string} endpoint API endpoint / API 端点
      * @param {string} token Token / 令牌
+     * @param {string} [endpoint=''] API endpoint / API 端点
      * @returns {string} Complete API URL / 完整的 API URL
      */
-    generateUrl(endpoint, token) {
+    generateUrl(token, endpoint = '') {
         const baseUrl = this.tokenGenerator.getServerUrl(endpoint);
-        return `${baseUrl}?token=${token}`;
+        return `${baseUrl}?token=${token}&rai_hash=${this.tokenGenerator.hash}`;
     }
 
     /**
@@ -49,7 +49,7 @@ export class RelayAPIClient {
             token
         } = options;
 
-        const url = this.generateUrl('chat/completions', token);
+        const url = this.generateUrl(token, 'chat/completions');
         
         try {
             const response = await axios.post(url, {
@@ -80,7 +80,7 @@ export class RelayAPIClient {
             token
         } = options;
 
-        const url = this.generateUrl('images/generations', token);
+        const url = this.generateUrl(token, 'images/generations');
         
         try {
             const response = await axios.post(url, {
@@ -109,7 +109,7 @@ export class RelayAPIClient {
             token
         } = options;
 
-        const url = this.generateUrl('embeddings', token);
+        const url = this.generateUrl(token, 'embeddings');
         
         try {
             const response = await axios.post(url, {

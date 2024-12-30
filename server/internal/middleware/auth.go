@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"encoding/base64"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -41,9 +42,22 @@ func TokenAuth(cfg *config.Config) gin.HandlerFunc {
 			c.Abort()
 			return
 		}
+		encryptedToken, extPath := splitStringByFirstSlash(encryptedToken)
+		if extPath != "" {
+			c.Set("ext_path", strings.TrimRight(extPath, "="))
+		}
 
 		// 获取配置 hash
 		raiHash := c.Query("rai_hash")
+		if raiHash == "" {
+			raiHash = c.Param("rai_hash")
+		}
+
+		raiHash, extPath = splitStringByFirstSlash(raiHash)
+		if extPath != "" {
+			c.Set("ext_path", strings.TrimRight(extPath, "="))
+		}
+
 		if raiHash == "" {
 			// 如果没有指定 hash，使用第一个可用的配置
 			for hash := range cfg.Clients {
@@ -51,7 +65,8 @@ func TokenAuth(cfg *config.Config) gin.HandlerFunc {
 				break
 			}
 		}
-
+		fmt.Println("raiHash", raiHash)
+		fmt.Println("cfg.Clients", cfg.Clients)
 		clientCfg, ok := cfg.GetClientConfig(raiHash)
 		if !ok {
 			c.JSON(http.StatusUnauthorized, gin.H{
@@ -84,11 +99,6 @@ func TokenAuth(cfg *config.Config) gin.HandlerFunc {
 		// 添加回 base64 padding
 		if padding := len(encryptedToken) % 4; padding > 0 {
 			encryptedToken += strings.Repeat("=", 4-padding)
-		}
-
-		encryptedToken, extPath := splitStringByFirstSlash(encryptedToken)
-		if extPath != "" {
-			c.Set("ext_path", strings.TrimRight(extPath, "="))
 		}
 
 		// Base64 URL 安全解码

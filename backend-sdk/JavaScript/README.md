@@ -37,6 +37,7 @@ The SDK requires a configuration object for initialization. You can load the con
 ```javascript
 import { RelayAPIClient } from 'relayapi-sdk';
 import fs from 'fs/promises';
+import { OpenAI } from 'openai';
 
 // Load configuration from file
 const configContent = await fs.readFile('config.rai', 'utf-8');
@@ -54,7 +55,15 @@ const token = client.createToken({
 });
 
 // Generate API URL
-const url = client.generateUrl('v1/chat/completions', token);
+const baseUrl = client.generateUrl(token);
+console.log('Base URL:', baseUrl);
+// Output example: http://localhost:8080/relayapi/?token=xxxxx&rai_hash=xxxxx
+
+// Use this URL as OpenAI API base URL in your frontend code
+const openai = new OpenAI({
+    baseURL: baseUrl,
+    apiKey: 'not-needed' // The actual API key is already in the token
+});
 ```
 
 ### Chat Request
@@ -186,3 +195,18 @@ Check the example programs in the `examples` directory for more usage examples:
 ## License
 
 MIT
+
+### Generate URL
+
+The `generateUrl` method is used to generate a complete API URL with token and hash parameters:
+
+```javascript
+const url = client.generateUrl(token);  // Use default empty endpoint
+const url = client.generateUrl(token, 'chat/completions');  // Specify endpoint
+```
+
+Parameters:
+- `token` (string): The encrypted token string
+- `endpoint` (string, optional): The API endpoint path, defaults to empty string
+
+The method will automatically add the token and configuration hash as URL parameters.

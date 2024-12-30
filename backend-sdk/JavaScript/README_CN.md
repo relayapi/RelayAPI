@@ -37,6 +37,7 @@ SDK 需要一个配置对象来初始化。你可以从配置文件（`.rai`）�
 ```javascript
 import { RelayAPIClient } from 'relayapi-sdk';
 import fs from 'fs/promises';
+import { OpenAI } from 'openai';
 
 // 从配置文件加载配置
 const configContent = await fs.readFile('config.rai', 'utf-8');
@@ -49,12 +50,20 @@ const client = new RelayAPIClient(config);
 const token = client.createToken({
     apiKey: 'your-api-key',
     maxCalls: 100,
-    expireDays: 1,
+    expireSeconds: 3600,
     provider: 'openai'
 });
 
 // 生成 API URL
-const url = client.generateUrl('v1/chat/completions', token);
+const baseUrl = client.generateUrl(token);
+console.log('Base URL:', baseUrl);
+// 输出示例: http://localhost:8080/relayapi/?token=xxxxx&rai_hash=xxxxx
+
+// 在前端代码中将此 URL 用作 OpenAI API 的基础 URL
+const openai = new OpenAI({
+    baseURL: baseUrl,
+    apiKey: 'not-needed' // 实际的 API key 已包含在 token 中
+});
 ```
 
 ### 聊天请求
@@ -100,6 +109,21 @@ const response = await client.createEmbedding({
 ```javascript
 const status = await client.healthCheck();
 ```
+
+### 生成 URL
+
+`generateUrl` 方法用于生成包含令牌和哈希参数的完整 API URL：
+
+```javascript
+const url = client.generateUrl(token);  // 使用默认的空端点
+const url = client.generateUrl(token, 'chat/completions');  // 指定具体端点
+```
+
+参数：
+- `token` (string)：加密的令牌字符串
+- `endpoint` (string, 可选)：API 端点路径，默认为空字符串
+
+该方法会自动将令牌和配置哈希作为 URL 参数添加。
 
 ## API 参考
 
