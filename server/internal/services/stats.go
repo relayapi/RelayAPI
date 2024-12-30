@@ -144,8 +144,8 @@ func (s *Stats) StartConsoleDisplay(stopChan chan struct{}) {
 
 	// 先显示 Logo
 	logo := `
-    ____       __           ___    ____  ____
-   / __ \___  / /___ ___  _/   |  / __ \/  _/
+    ____       __          ___    ____  ____
+   / __ \___  / /___ ___ _/   |  / __ \/  _/
   / /_/ / _ \/ / __ '__ \/ /| | / /_/ // /  
  / _, _/  __/ / / / / / / ___ |/ ____// /   
 /_/ |_|\___/_/_/ /_/ /_/_/  |_/_/   /___/   
@@ -251,24 +251,27 @@ func (s *Stats) StartConsoleDisplay(stopChan chan struct{}) {
 	fmt.Printf("\n%s🚀 服务启动端口 %s:8840%s\n\n",
 		"\033[36m", s.ServerAddr, "\033[0m")
 
-	// 倒计时启动统计界面，使用脉动效果
+	// 倒计时启动统计界面，使用动画效果
 	countdownText := "正在启动仪表盘"
-	for i := 3; i > 0; i-- {
-		// 脉动效果
-		for brightness := 0; brightness < 2; brightness++ {
-			if brightness == 0 {
-				fmt.Printf("\r\033[38;5;51m%s %d 秒\033[0m", countdownText, i)
-			} else {
-				fmt.Printf("\r\033[38;5;45m%s %d 秒\033[0m", countdownText, i)
-			}
-			time.Sleep(500 * time.Millisecond)
+	spinIdx = 0 // 重置 spinIdx
+	for i := 2; i > 0; i-- {
+		// 每秒显示 10 帧动画
+		for frame := 0; frame < 10; frame++ {
+			spinChar := spinChars[frame%len(spinChars)]
+			// 使用不同颜色
+			color := gradientColors[frame%(len(gradientColors))]
+			fmt.Printf("\r%s%s %s %d 秒%s", color, spinChar, countdownText, i, "\033[0m")
+			time.Sleep(80 * time.Millisecond)
 		}
 	}
 
 	// 启动提示使用渐变动画
-	startText := "启动仪表盘..."
-	for i := 0; i < len(gradientColors); i++ {
-		fmt.Printf("\r%s%s\033[0m", gradientColors[i], startText)
+	startText := "正在初始化..."
+	spinIdx = 0               // 重置 spinIdx
+	for i := 0; i < 15; i++ { // 显示更长的动画
+		color := gradientColors[i%len(gradientColors)]
+		fmt.Printf("\r%s%s %s\033[0m", color, spinChars[spinIdx], startText)
+		spinIdx = (spinIdx + 1) % len(spinChars)
 		time.Sleep(100 * time.Millisecond)
 	}
 	fmt.Print("\n\n")
@@ -456,7 +459,7 @@ func (s *Stats) StartConsoleDisplay(stopChan chan struct{}) {
 					// 切换到普通模式
 					ui.Close()
 					uiActive = false
-					fmt.Println("\n按 Ctrl+C 退出程序，按其他任意键返回统计界面")
+					fmt.Println("\nCtrl+C to exit, any other key to return to stats.")
 				case "<Resize>":
 					updateUI()
 				}
