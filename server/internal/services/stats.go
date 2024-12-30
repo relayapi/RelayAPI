@@ -2,6 +2,8 @@ package services
 
 import (
 	"fmt"
+	"sort"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -15,6 +17,7 @@ type Stats struct {
 	BytesReceived      uint64
 	BytesSent          uint64
 	StartTime          time.Time
+	errorStats         sync.Map // 用于存储每个错误状态码的计数
 }
 
 func NewStats() *Stats {
@@ -40,12 +43,62 @@ func (s *Stats) IncrementFailed() {
 	atomic.AddUint64(&s.FailedRequests, 1)
 }
 
+// IncrementErrorStatus 增加特定错误状态码的计数
+func (s *Stats) IncrementErrorStatus(statusCode int) {
+	if value, ok := s.errorStats.Load(statusCode); ok {
+		atomic.AddUint64(value.(*uint64), 1)
+	} else {
+		var counter uint64 = 1
+		s.errorStats.Store(statusCode, &counter)
+	}
+}
+
+// GetErrorStats 获取错误状态码统计
+func (s *Stats) GetErrorStats() map[int]uint64 {
+	stats := make(map[int]uint64)
+	s.errorStats.Range(func(key, value interface{}) bool {
+		stats[key.(int)] = atomic.LoadUint64(value.(*uint64))
+		return true
+	})
+	return stats
+}
+
 func (s *Stats) AddBytesReceived(n uint64) {
 	atomic.AddUint64(&s.BytesReceived, n)
 }
 
 func (s *Stats) AddBytesSent(n uint64) {
 	atomic.AddUint64(&s.BytesSent, n)
+}
+
+// 获取错误状态码的描述
+func getStatusCodeDesc(code int) string {
+	switch code {
+	case 400:
+		return "Bad Request"
+	case 401:
+		return "Unauthorized"
+	case 403:
+		return "Forbidden"
+	case 404:
+		return "Not Found"
+	case 405:
+		return "Method Not Allowed"
+	case 408:
+		return "Request Timeout"
+	case 429:
+		return "Too Many Requests"
+	case 500:
+		return "Internal Server Error"
+	case 502:
+		return "Bad Gateway"
+	case 503:
+		return "Service Unavailable"
+	case 504:
+		return "Gateway Timeout"
+	default:
+		return "Unknown Error"
+	}
 }
 
 // 格式化字节大小
@@ -70,6 +123,7 @@ func (s *Stats) StartConsoleDisplay(stopChan chan struct{}) {
 	valueColor := color.New(color.FgHiGreen)
 	errorColor := color.New(color.FgHiRed)
 	successColor := color.New(color.FgHiGreen)
+	warningColor := color.New(color.FgHiYellow)
 
 	// 创建进度条字符
 	progressChars := []string{"⣾", "⣽", "⣻", "⢿", "⡿", "⣟", "⣯", "⣷"}
@@ -139,6 +193,40 @@ func (s *Stats) StartConsoleDisplay(stopChan chan struct{}) {
 				valueColor.Printf("%.2f%%\n", successRate)
 			} else {
 				errorColor.Printf("%.2f%%\n", successRate)
+			}
+
+			// 显示错误统计
+			if failedReqs > 0 {
+				labelColor.Print("\n  🚫 Error Statistics:\n")
+				errorStats := s.GetErrorStats()
+
+				// 对状态码进行排序
+				var codes []int
+				for code := range errorStats {
+					codes = append(codes, code)
+				}
+				sort.Ints(codes)
+
+				for _, code := range codes {
+					count := errorStats[code]
+					percentage := float64(count) / float64(failedReqs) * 100
+
+					// 根据错误类型选择颜色
+					var statusColor *color.Color
+					switch {
+					case code >= 500:
+						statusColor = errorColor // 服务器错误用红色
+					case code >= 400:
+						statusColor = warningColor // 客户端错误用黄色
+					default:
+						statusColor = valueColor
+					}
+
+					labelColor.Printf("    %d ", code)
+					statusColor.Printf("%-20s", getStatusCodeDesc(code))
+					statusColor.Printf("Count: %-6d", count)
+					statusColor.Printf("(%.2f%%)\n", percentage)
+				}
 			}
 
 			// 添加分隔线

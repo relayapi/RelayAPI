@@ -126,8 +126,10 @@ func main() {
 		api.Use(func(c *gin.Context) {
 			statsService.IncrementTotal()
 			c.Next()
-			if c.Writer.Status() >= 400 {
+			status := c.Writer.Status()
+			if status >= 400 {
 				statsService.IncrementFailed()
+				statsService.IncrementErrorStatus(status)
 			} else {
 				statsService.IncrementSuccess()
 			}
