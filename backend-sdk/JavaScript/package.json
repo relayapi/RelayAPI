@@ -1,6 +1,6 @@
 {
   "name": "relayapi-sdk",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "RelayAPI JavaScript SDK - A client library for RelayAPI Server",
   "main": "src/index.js",
   "type": "module",

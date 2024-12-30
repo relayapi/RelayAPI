@@ -7,7 +7,7 @@
     },
     "crypto": {
         "method": "aes",
-        "aes_key": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+        "aes_key": "a123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
         "aes_iv_seed": "fedcba9876543210"
     }
 }

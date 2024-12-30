@@ -4,7 +4,13 @@ RelayAPI Python SDK 是一个用于与 RelayAPI 服务器进行交互的客户�
 
 ## 安装
 
-使用 pip 安装：
+# 从源代码安装
+
+cd relayapi/backend-sdk/python
+pip install -e .
+
+
+使用 pip 安装（即将支持）：
 
 ```bash
 pip install relayapi-sdk

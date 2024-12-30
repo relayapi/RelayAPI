@@ -4,7 +4,7 @@ import os
 from relayapi import RelayAPIClient
 
 # 创建客户端实例
-client = RelayAPIClient("../../../server/default.rai")
+client = RelayAPIClient("../../server/default.rai")
 
 # 创建令牌
 token = client.create_token(

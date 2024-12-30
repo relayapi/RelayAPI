@@ -133,7 +133,7 @@ class TokenGenerator:
         Returns:
             str: 完整的服务器 URL
         """
-        base_url = f"{self.config['server']['host']}:{self.config['server']['port']}"
+        base_url = f"{self.config['server']['host']}:{self.config['server']['port']}{self.config['server']['base_path']}"
         if not path:
             return base_url
         
