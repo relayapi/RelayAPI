@@ -6,7 +6,7 @@ describe('TokenGenerator', () => {
         version: '1.0.0',
         server: {
             host: 'http://localhost',
-            port: 8080,
+            port: 8840,
             base_path: '/relayapi/'
         },
         crypto: {
@@ -121,17 +121,17 @@ describe('TokenGenerator', () => {
     describe('getServerUrl', () => {
         it('should generate base URL without path', () => {
             const url = tokenGenerator.getServerUrl();
-            expect(url).toBe('http://localhost:8080/relayapi/');
+            expect(url).toBe('http://localhost:8840/relayapi/');
         });
 
         it('should generate URL with path', () => {
             const url = tokenGenerator.getServerUrl('v1/chat/completions');
-            expect(url).toBe('http://localhost:8080/relayapi/v1/chat/completions');
+            expect(url).toBe('http://localhost:8840/relayapi/v1/chat/completions');
         });
 
         it('should handle paths with leading slash', () => {
             const url = tokenGenerator.getServerUrl('/v1/chat/completions');
-            expect(url).toBe('http://localhost:8080/relayapi/v1/chat/completions');
+            expect(url).toBe('http://localhost:8840/relayapi/v1/chat/completions');
         });
 
         it('should handle base paths with and without trailing slash', () => {
@@ -147,8 +147,8 @@ describe('TokenGenerator', () => {
             const generator1 = new TokenGenerator(configWithSlash);
             const generator2 = new TokenGenerator(configWithoutSlash);
 
-            expect(generator1.getServerUrl('v1/chat')).toBe('http://localhost:8080/relayapi/v1/chat');
-            expect(generator2.getServerUrl('v1/chat')).toBe('http://localhost:8080/relayapi/v1/chat');
+            expect(generator1.getServerUrl('v1/chat')).toBe('http://localhost:8840/relayapi/v1/chat');
+            expect(generator2.getServerUrl('v1/chat')).toBe('http://localhost:8840/relayapi/v1/chat');
         });
     });
 }); 

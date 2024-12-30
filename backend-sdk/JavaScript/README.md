@@ -19,7 +19,7 @@ The SDK requires a configuration object for initialization. You can load the con
   "version": "1.0.0",
   "server": {
     "host": "http://localhost",
-    "port": 8080,
+    "port": 8840,
     "base_path": "/relayapi/"
   },
   "crypto": {
@@ -57,7 +57,7 @@ const token = client.createToken({
 // Generate API URL
 const baseUrl = client.generateUrl(token);
 console.log('Base URL:', baseUrl);
-// Output example: http://localhost:8080/relayapi/?token=xxxxx&rai_hash=xxxxx
+// Output example: http://localhost:8840/relayapi/?token=xxxxx&rai_hash=xxxxx
 
 // Use this URL as OpenAI API base URL in your frontend code
 const openai = new OpenAI({

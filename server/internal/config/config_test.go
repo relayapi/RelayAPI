@@ -78,8 +78,8 @@ func TestLoadConfigDefault(t *testing.T) {
 	}
 
 	// 验证默认值
-	if config.Server.Port != 8080 {
-		t.Errorf("Expected default port 8080, got %d", config.Server.Port)
+	if config.Server.Port != 8840 {
+		t.Errorf("Expected default port 8840, got %d", config.Server.Port)
 	}
 	if config.Database.Host != "localhost" {
 		t.Errorf("Expected default host localhost, got %s", config.Database.Host)
@@ -145,4 +145,4 @@ func TestSaveConfig(t *testing.T) {
 	if loadedConfig.Crypto.AESIVSeed != config.Crypto.AESIVSeed {
 		t.Errorf("AES IV seed mismatch: expected %s, got %s", config.Crypto.AESIVSeed, loadedConfig.Crypto.AESIVSeed)
 	}
-} 
+}

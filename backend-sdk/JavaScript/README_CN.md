@@ -19,7 +19,7 @@ SDK 需要一个配置对象来初始化。你可以从配置文件（`.rai`）�
   "version": "1.0.0",
   "server": {
     "host": "http://localhost",
-    "port": 8080,
+    "port": 8840,
     "base_path": "/relayapi/"
   },
   "crypto": {
@@ -57,7 +57,7 @@ const token = client.createToken({
 // 生成 API URL
 const baseUrl = client.generateUrl(token);
 console.log('Base URL:', baseUrl);
-// 输出示例: http://localhost:8080/relayapi/?token=xxxxx&rai_hash=xxxxx
+// 输出示例: http://localhost:8840/relayapi/?token=xxxxx&rai_hash=xxxxx
 
 // 在前端代码中将此 URL 用作 OpenAI API 的基础 URL
 const openai = new OpenAI({

@@ -100,7 +100,7 @@ func DefaultClientConfig() ClientConfig {
 			BasePath string `json:"base_path"`
 		}{
 			Host:     "http://localhost",
-			Port:     8080,
+			Port:     8840,
 			BasePath: "/relayapi/",
 		},
 		Crypto: struct {

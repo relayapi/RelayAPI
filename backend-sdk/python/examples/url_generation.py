@@ -9,7 +9,7 @@ config = {
     "version": "1.0.0",
     "server": {
         "host": "http://localhost",
-        "port": 8080,
+        "port": 8840,
         "base_path": "/relayapi/"
     },
     "crypto": {
@@ -33,7 +33,7 @@ token = client.create_token(
 # 生成基础 URL（不指定 API 类型）
 base_url = client.generate_api_url_with_token(token)
 print("Base URL:", base_url)
-# 输出示例: http://localhost:8080/relayapi/?token=xxxxx&rai_hash=xxxxx
+# 输出示例: http://localhost:8840/relayapi/?token=xxxxx&rai_hash=xxxxx
 
 # 生成聊天 API URL
 chat_url = client.generate_api_url_with_token(token, 'chat_completions')

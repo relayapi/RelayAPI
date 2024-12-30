@@ -26,7 +26,7 @@ config = {
     "version": "1.0.0",
     "server": {
         "host": "http://localhost",
-        "port": 8080,
+        "port": 8840,
         "base_path": "/relayapi/"
     },
     "crypto": {
@@ -59,7 +59,7 @@ token = client.create_token(
 # Generate API URL
 base_url = client.generate_api_url_with_token(token)
 print("Base URL:", base_url)
-# Output example: http://localhost:8080/relayapi/?token=xxxxx&rai_hash=xxxxx
+# Output example: http://localhost:8840/relayapi/?token=xxxxx&rai_hash=xxxxx
 
 # Use this URL as the base URL for OpenAI API in frontend code
 openai_client = OpenAI(

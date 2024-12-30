@@ -63,6 +63,23 @@ npm install relayapi-sdk    # Node.js (@https://www.npmjs.com/package/relayapi-s
 pip install relayapi-sdk    # Python (@https://pypi.org/project/relayapi-sdk/)
 ```
 
+### Configuration
+
+RelayAPI requires two types of configuration files:
+
+1. `config.json` - Server configuration file (required)
+   - Contains server settings, rate limits, and logging configuration
+   - Must be present when starting the server
+   - Example: [Server Configuration Guide](server/README.md)
+
+2. `default.rai` - Client configuration file (auto-generated if not present)
+   - Contains encryption settings and server connection information
+   - Used by SDKs to generate tokens and connect to the server
+   - Can be loaded from file or passed as object
+   - Example: [JavaScript SDK Guide](backend-sdk/JavaScript/README.md) | [Python SDK Guide](backend-sdk/python/README.md)
+
+For detailed configuration options and examples, please refer to our [Configuration Guide](docs/configuration.md).
+
 ### Backend Usage Example
 
 ```typescript
@@ -87,7 +104,7 @@ const token = client.createToken({
 // Generate API URL
 const baseUrl = client.generateUrl(token);
 console.log('Base URL:', baseUrl);
-// Output example: http://localhost:8080/relayapi/?token=xxxxx&rai_hash=xxxxx
+// Output example: http://localhost:8840/relayapi/?token=xxxxx&rai_hash=xxxxx
 
 // Return to frontend
 return { baseUrl, token };

@@ -6,7 +6,7 @@ describe('RelayAPIClient', () => {
         version: '1.0.0',
         server: {
             host: 'http://localhost',
-            port: 8080,
+            port: 8840,
             base_path: '/relayapi/'
         },
         crypto: {
@@ -44,7 +44,7 @@ describe('RelayAPIClient', () => {
             const url = client.generateUrl('v1/chat/completions', token);
 
             expect(url).toBeDefined();
-            expect(url).toContain('http://localhost:8080/relayapi/v1/chat/completions');
+            expect(url).toContain('http://localhost:8840/relayapi/v1/chat/completions');
             expect(url).toContain('token=');
         });
     });

@@ -2,6 +2,9 @@
   <h1>🚀 RelayAPI</h1>
   <p><strong>安全、高性能的 API 代理层，让前端安全调用 AI 服务</strong></p>
   <p>
+    <a href="README.md">English Documentation</a>
+  </p>
+  <p>
     <a href="https://github.com/relayapi/RelayAPI/stargazers">
       <img src="https://img.shields.io/github/stars/relayapi/RelayAPI?style=flat-square" alt="stars">
     </a>
@@ -60,6 +63,23 @@ npm install relayapi-sdk    # Node.js (@https://www.npmjs.com/package/relayapi-s
 pip install relayapi-sdk    # Python (@https://pypi.org/project/relayapi-sdk/)
 ```
 
+### 配置
+
+RelayAPI 需要两种配置文件：
+
+1. `config.json` - 服务器配置文件（必需）
+   - 包含服务器设置、速率限制和日志配置
+   - 启动服务器时必须存在
+   - 示例：[服务器配置指南](server/README.md)
+
+2. `default.rai` - 客户端配置文件（如不存在则自动生成）
+   - 包含加密设置和服务器连接信息
+   - 用于 SDK 生成令牌和连接服务器
+   - 可以从文件加载或直接传入配置对象
+   - 示例：[JavaScript SDK 指南](backend-sdk/JavaScript/README.md) | [Python SDK 指南](backend-sdk/python/README.md)
+
+详细配置选项和示例请参考[配置指南](docs/configuration_cn.md)。
+
 ### 后端使用示例
 
 ```typescript
@@ -84,7 +104,7 @@ const token = client.createToken({
 // 生成 API URL
 const baseUrl = client.generateUrl(token);
 console.log('Base URL:', baseUrl);
-// 输出示例: http://localhost:8080/relayapi/?token=xxxxx&rai_hash=xxxxx
+// 输出示例: http://localhost:8840/relayapi/?token=xxxxx&rai_hash=xxxxx
 
 // 返回给前端
 return { baseUrl, token };
@@ -136,7 +156,7 @@ const response = await openai.chat.completions.create({
 - RunwayML (视频生成)
 - Wolfram Alpha (科学计算)
 
-> 完整支持列表请查看 [支持的服务商列表](docs/providers.md)
+> 完整支持列表请查看[支持的服务商列表](docs/providers.md)
 
 ## 🔐 安全说明
 
@@ -146,7 +166,7 @@ const response = await openai.chat.completions.create({
    - 支持 IP 绑定和地理位置限制
 
 2. **多重加密**
-   - 采用 AES ECC等多种加密方式
+   - 采用 AES、ECC 等多种加密方式
    - 支持令牌防重放攻击
    - 全链路 HTTPS 加密
 
@@ -155,7 +175,6 @@ const response = await openai.chat.completions.create({
    - 基于时间的令牌失效
    - 并发请求控制
    - IP 白名单机制
-
 
 ## 🤝 贡献指南
 
