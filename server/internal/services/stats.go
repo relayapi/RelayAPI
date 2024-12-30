@@ -130,13 +130,148 @@ func formatBytes(bytes uint64) string {
 
 // StartConsoleDisplay 开始在控制台显示实时统计信息
 func (s *Stats) StartConsoleDisplay(stopChan chan struct{}) {
-	// 添加 3 秒倒计时
-	fmt.Print("\n正在准备启动统计界面")
-	for i := 3; i > 0; i-- {
-		fmt.Printf("\r正在准备启动统计界面 %d 秒", i)
-		time.Sleep(time.Second)
+	// 清屏并将光标移到开头
+	fmt.Print("\033[2J\033[H")
+
+	// 渐变色数组
+	gradientColors := []string{
+		"\033[38;5;51m", // 浅青色
+		"\033[38;5;45m", // 青色
+		"\033[38;5;39m", // 深青色
+		"\033[38;5;33m", // 蓝色
+		"\033[38;5;27m", // 深蓝色
 	}
-	fmt.Print("\r正在启动统计界面...    \n")
+
+	// 先显示 Logo
+	logo := `
+    ____       __           ___    ____  ____
+   / __ \___  / /___ ___  _/   |  / __ \/  _/
+  / /_/ / _ \/ / __ '__ \/ /| | / /_/ // /  
+ / _, _/  __/ / / / / / / ___ |/ ____// /   
+/_/ |_|\___/_/_/ /_/ /_/_/  |_/_/   /___/   
+                                            v` + s.Version + "\n"
+
+	// 使用渐变色一次性显示 Logo
+	logoLines := strings.Split(logo, "\n")
+	for _, line := range logoLines {
+		if len(strings.TrimSpace(line)) > 0 {
+			colorIdx := 0
+			for _, char := range line {
+				fmt.Print(gradientColors[colorIdx%len(gradientColors)], string(char))
+				colorIdx++
+			}
+		}
+		fmt.Print("\033[0m\n")
+	}
+
+	// 等待一小段时间让用户欣赏 Logo
+	time.Sleep(300 * time.Millisecond)
+
+	// 显示启动信息
+	fmt.Println("\n=== RelayAPI 服务启动中 ===")
+
+	// 使用打字机效果显示服务器信息
+	serverInfo := fmt.Sprintf("🚀 启动地址: %s", s.ServerAddr)
+	for _, char := range serverInfo {
+		fmt.Print("\033[33m", string(char), "\033[0m")
+		time.Sleep(20 * time.Millisecond)
+	}
+	fmt.Println()
+
+	// 使用动画效果显示初始化提示
+	initText := "系统核心初始化..."
+	fmt.Print("\n")
+	for i := 0; i < 3; i++ {
+		for _, char := range []string{"⣾", "⣽", "⣻", "⢿", "⡿", "⣟", "⣯", "⣷"} {
+			fmt.Printf("\r\033[32m%s %s\033[0m", char, initText)
+			time.Sleep(50 * time.Millisecond)
+		}
+	}
+	fmt.Println("\n")
+
+	// 显示进度条
+	width := 40
+	spinChars := []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}
+	spinIdx := 0
+
+	for i := 0; i <= width; i++ {
+		progress := float64(i) / float64(width) * 100
+		filled := repeat('▓', i)
+		empty := repeat('░', width-i)
+
+		// 使用渐变色进度条
+		colorIdx := int(float64(i) / float64(width) * float64(len(gradientColors)))
+		if colorIdx >= len(gradientColors) {
+			colorIdx = len(gradientColors) - 1
+		}
+
+		// 使用彩色输出和加载动画
+		fmt.Printf("\r%s %s[%s%s]\033[0m \033[33m%.1f%%\033[0m",
+			spinChars[spinIdx],
+			gradientColors[colorIdx],
+			string(filled),
+			string(empty),
+			progress)
+
+		spinIdx = (spinIdx + 1) % len(spinChars)
+		time.Sleep(50 * time.Millisecond)
+	}
+	fmt.Println("\n")
+
+	// 显示启动检查项，使用动画效果
+	checkItems := []struct {
+		text    string
+		color   string
+		symbols []string
+	}{
+		{"日志系统加载完毕", "\033[32m", []string{"⋯", "⋱", "⋮", "⋰"}},   // 绿色
+		{"代理服务初始化成功", "\033[36m", []string{"◢", "◣", "◤", "◥"}},  // 青色
+		{"API 处理模块就绪", "\033[33m", []string{"◐", "◓", "◑", "◒"}}, // 黄色
+		{"配置流量限制中...", "\033[35m", []string{"▖", "▘", "▝", "▗"}}, // 紫色
+		{"流量限制规则已部署", "\033[34m", []string{"⠋", "⠙", "⠸", "⠴"}},  // 蓝色
+		{"限流中间件启动完成", "\033[32m", []string{"⣾", "⣽", "⣻", "⢿"}},  // 绿色
+		{"安全认证模块已加载", "\033[36m", []string{"◢", "◣", "◤", "◥"}},  // 青色
+	}
+
+	for _, item := range checkItems {
+		// 显示加载动画
+		for j := 0; j < 6; j++ {
+			fmt.Printf("\r%s%s %s\033[0m",
+				item.color,
+				item.symbols[j%len(item.symbols)],
+				item.text)
+			time.Sleep(50 * time.Millisecond)
+		}
+		// 显示完成标记
+		fmt.Printf("\r%s✓ %s\033[0m\n", item.color, item.text)
+		time.Sleep(100 * time.Millisecond)
+	}
+
+	// 显示服务器启动信息
+	fmt.Printf("\n%s🚀 服务启动端口 %s:8840%s\n\n",
+		"\033[36m", s.ServerAddr, "\033[0m")
+
+	// 倒计时启动统计界面，使用脉动效果
+	countdownText := "正在启动仪表盘"
+	for i := 3; i > 0; i-- {
+		// 脉动效果
+		for brightness := 0; brightness < 2; brightness++ {
+			if brightness == 0 {
+				fmt.Printf("\r\033[38;5;51m%s %d 秒\033[0m", countdownText, i)
+			} else {
+				fmt.Printf("\r\033[38;5;45m%s %d 秒\033[0m", countdownText, i)
+			}
+			time.Sleep(500 * time.Millisecond)
+		}
+	}
+
+	// 启动提示使用渐变动画
+	startText := "启动仪表盘..."
+	for i := 0; i < len(gradientColors); i++ {
+		fmt.Printf("\r%s%s\033[0m", gradientColors[i], startText)
+		time.Sleep(100 * time.Millisecond)
+	}
+	fmt.Print("\n\n")
 
 	var uiActive bool = true
 	var uiQuit bool = false
