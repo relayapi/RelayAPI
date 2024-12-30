@@ -130,16 +130,16 @@ func formatBytes(bytes uint64) string {
 
 // StartConsoleDisplay 开始在控制台显示实时统计信息
 func (s *Stats) StartConsoleDisplay(stopChan chan struct{}) {
+	// 添加 3 秒倒计时
+	fmt.Print("\n正在准备启动统计界面")
+	for i := 3; i > 0; i-- {
+		fmt.Printf("\r正在准备启动统计界面 %d 秒", i)
+		time.Sleep(time.Second)
+	}
+	fmt.Print("\r正在启动统计界面...    \n")
+
 	var uiActive bool = true
 	var uiQuit bool = false
-
-	// 保存原始终端设置
-	oldState, err := term.MakeRaw(int(syscall.Stdin))
-	if err != nil {
-		log.Printf("无法设置终端为原始模式: %v", err)
-		return
-	}
-	defer term.Restore(int(syscall.Stdin), oldState)
 
 	// 创建一个函数来启动 UI
 	startUI := func() error {
@@ -153,6 +153,7 @@ func (s *Stats) StartConsoleDisplay(stopChan chan struct{}) {
 
 	// 初始启动 UI
 	if err := startUI(); err != nil {
+		fmt.Println("启动统计界面失败，将以普通模式运行")
 		return
 	}
 	defer ui.Close()
@@ -311,21 +312,16 @@ func (s *Stats) StartConsoleDisplay(stopChan chan struct{}) {
 	// 主事件循环
 	logUpdateChan := logger.GetLogUpdateChan()
 
-	// 创建按键读取缓冲区
-	buf := make([]byte, 1)
-
 	for !uiQuit {
 		if uiActive {
 			select {
 			case e := <-uiEvents:
 				switch e.ID {
-				case "u", "<C-u>":
+				case "<C-c>":
 					// 切换到普通模式
 					ui.Close()
 					uiActive = false
-					fmt.Println("\n“Press ‘u’ or ‘Ctrl+u’ to switch to UI mode, or ‘q’ to exit.”")
-				case "<C-c>":
-					uiQuit = true
+					fmt.Println("\n按 Ctrl+C 退出程序，按其他任意键返回统计界面")
 				case "<Resize>":
 					updateUI()
 				}
@@ -342,18 +338,32 @@ func (s *Stats) StartConsoleDisplay(stopChan chan struct{}) {
 			case <-stopChan:
 				return
 			default:
-				// 检查键盘输入
+				// 设置终端为原始模式
+				oldState, err := term.MakeRaw(int(syscall.Stdin))
+				if err != nil {
+					log.Printf("无法设置终端为原始模式: %v", err)
+					return
+				}
+
+				// 读取一个字符
+				buf := make([]byte, 1)
 				if n, err := os.Stdin.Read(buf); err == nil && n == 1 {
-					switch buf[0] {
-					case 'u':
-						// 切换回 UI 模式
+					// 恢复终端设置
+					term.Restore(int(syscall.Stdin), oldState)
+
+					if buf[0] == 3 { // Ctrl+C
+						uiQuit = true
+					} else {
+						// 任意其他键返回 UI 模式
 						fmt.Print("\n") // 在切换回 UI 模式前换行，保持输出整洁
 						if err := startUI(); err == nil {
 							updateUI()
 						}
-					case 'q': // Ctrl+C
-						uiQuit = true
 					}
+				} else {
+					// 恢复终端设置
+					term.Restore(int(syscall.Stdin), oldState)
+					time.Sleep(100 * time.Millisecond) // 添加短暂延迟，避免 CPU 占用过高
 				}
 			}
 		}
