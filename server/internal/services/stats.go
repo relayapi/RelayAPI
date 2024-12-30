@@ -319,11 +319,11 @@ func (s *Stats) StartConsoleDisplay(stopChan chan struct{}) {
 			select {
 			case e := <-uiEvents:
 				switch e.ID {
-				case "q", "<C-q>":
+				case "u", "<C-u>":
 					// 切换到普通模式
 					ui.Close()
 					uiActive = false
-					fmt.Println("\n“Press ‘q’ or ‘Ctrl+q’ to switch to UI mode, or ‘Ctrl+C’ to exit.”")
+					fmt.Println("\n“Press ‘u’ or ‘Ctrl+u’ to switch to UI mode, or ‘q’ to exit.”")
 				case "<C-c>":
 					uiQuit = true
 				case "<Resize>":
@@ -339,31 +339,19 @@ func (s *Stats) StartConsoleDisplay(stopChan chan struct{}) {
 		} else {
 			// 普通模式下的事件处理
 			select {
-			case <-ticker.C:
-				// 在普通模式下打印基本统计信息
-				uptime := s.GetUptime()
-				totalReqs := atomic.LoadUint64(&s.TotalRequests)
-				successReqs := atomic.LoadUint64(&s.SuccessfulRequests)
-				failedReqs := atomic.LoadUint64(&s.FailedRequests)
-				fmt.Printf("\rUptime: %s | Requests: %d | Success: %d | Failed: %d | TPS: %.2f",
-					uptime.Round(time.Second),
-					totalReqs,
-					successReqs,
-					failedReqs,
-					float64(totalReqs)/uptime.Seconds())
 			case <-stopChan:
 				return
 			default:
 				// 检查键盘输入
 				if n, err := os.Stdin.Read(buf); err == nil && n == 1 {
 					switch buf[0] {
-					case 'q':
+					case 'u':
 						// 切换回 UI 模式
 						fmt.Print("\n") // 在切换回 UI 模式前换行，保持输出整洁
 						if err := startUI(); err == nil {
 							updateUI()
 						}
-					case 3: // Ctrl+C
+					case 'q': // Ctrl+C
 						uiQuit = true
 					}
 				}

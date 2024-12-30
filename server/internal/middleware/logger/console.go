@@ -2,9 +2,12 @@ package logger
 
 import (
 	"fmt"
+	"log"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/hokaccha/go-prettyjson"
 )
 
 var (
@@ -30,21 +33,35 @@ func GetLogUpdateChan() chan struct{} {
 
 // ConsoleLogWriter 控制台日志写入器
 type ConsoleLogWriter struct {
-	mu sync.Mutex
+	formatter *prettyjson.Formatter
+	mu        sync.Mutex
 }
 
 // NewConsoleLogWriter 创建控制台日志写入器
 func NewConsoleLogWriter() *ConsoleLogWriter {
-	return &ConsoleLogWriter{}
+	formatter := prettyjson.NewFormatter()
+	formatter.DisabledColor = false // 启用颜色输出
+	formatter.Indent = 2            // 设置缩进
+
+	return &ConsoleLogWriter{
+		formatter: formatter,
+	}
 }
 
-func (w *ConsoleLogWriter) Write(log map[string]interface{}) error {
+func (w *ConsoleLogWriter) Write(logs map[string]interface{}) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
+	output, err := w.formatter.Marshal(logs)
+	if err != nil {
+		return err
+	}
+
+	log.Println(string(output))
+
 	// 获取日志类型和时间
-	logType, _ := log["type"].(string)
-	timeStr, _ := log["time"].(string)
+	logType, _ := logs["type"].(string)
+	timeStr, _ := logs["time"].(string)
 
 	// 解析时间
 	t, err := time.Parse(time.RFC3339, timeStr)
@@ -57,8 +74,8 @@ func (w *ConsoleLogWriter) Write(log map[string]interface{}) error {
 
 	// 如果是请求日志
 	if logType == "request" {
-		method, _ := log["method"].(string)
-		path, _ := log["path"].(string)
+		method, _ := logs["method"].(string)
+		path, _ := logs["path"].(string)
 		logLine = fmt.Sprintf("%s [%s] %s %s",
 			timeStr,
 			strings.ToUpper(logType),
@@ -68,8 +85,8 @@ func (w *ConsoleLogWriter) Write(log map[string]interface{}) error {
 
 	// 如果是响应日志
 	if logType == "response" {
-		status, _ := log["status"].(float64)
-		latency, _ := log["latency_ms"].(float64)
+		status, _ := logs["status"].(float64)
+		latency, _ := logs["latency_ms"].(float64)
 		logLine = fmt.Sprintf("%s [%s] Status: %d, Latency: %.2fms",
 			timeStr,
 			strings.ToUpper(logType),
