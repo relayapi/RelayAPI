@@ -40,8 +40,8 @@ type ConsoleLogWriter struct {
 // NewConsoleLogWriter 创建控制台日志写入器
 func NewConsoleLogWriter() *ConsoleLogWriter {
 	formatter := prettyjson.NewFormatter()
-	formatter.DisabledColor = false // 启用颜色输出
-	formatter.Indent = 2            // 设置缩进
+	formatter.DisabledColor = true // 启用颜色输出
+	formatter.Indent = 2           // 设置缩进
 
 	return &ConsoleLogWriter{
 		formatter: formatter,
