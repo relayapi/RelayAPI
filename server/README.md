@@ -1,110 +1,201 @@
 # RelayAPI Server
 
-安全的 API 代理服务器，用于保护敏感的 API 密钥。
+[中文文档](README_CN.md)
 
-## 编译
+The RelayAPI server is the core component responsible for API proxying, token validation, and request forwarding.
+
+## Quick Start
 
 ```bash
-# 设置 Go 环境
-export GOROOT=/usr/local/go
-go mod download && go mod tidy
+# Clone the repository
+git clone https://github.com/relayapi/RelayAPI.git
 
-# 编译
+# Enter the server directory
 cd server
-go build -o bin/relayapi-server cmd/server/main.go
+
+# Run the server with default configuration
+go run cmd/server/main.go -rai ./rai -d
 ```
 
-## 配置
+Command line options:
+- `-rai`: Client configuration directory path (default: current directory)
+- `-config`: Server configuration file path (default: config.json)
+- `-d`: Enable debug mode, logs will be written to debug.log
 
-创建 `config.json` 文件：
+## Configuration
+
+### Server Configuration (`config.json`)
+
+The server configuration file controls server behavior, including network settings, rate limits, and logging options.
 
 ```json
 {
   "server": {
-    "port": 8840
+    "host": "0.0.0.0",
+    "port": 8840,
+    "read_timeout": 30,
+    "write_timeout": 30,
+    "max_header_bytes": 1048576,
+    "debug": false
   },
-  "database": {
-    "host": "localhost",
-    "port": 5432,
-    "user": "postgres",
-    "password": "your_password",
-    "dbname": "relayapi"
+  "log": {
+    "console": true,
+    "database": {
+      "enabled": true,
+      "type": "postgres",
+      "connection_string": "user=postgres password=postgres dbname=relayapi host=localhost port=5432 sslmode=disable"
+    },
+    "web": {
+      "enabled": false,
+      "callback_url": "http://example.com/log"
+    },
+    "parquet": {
+      "enabled": false,
+      "file_path": "/path/to/logs/output.parquet"
+    }
   },
-  "crypto": {
-    "method": "aes",
-    "key_size": 256,
-    "private_key_path": "keys/private.pem",
-    "public_key_path": "keys/public.pem",
-    "aes_key": "",
-    "aes_iv_seed": ""
+  "rate_limit": {
+    "requests_per_second": 20,
+    "burst": 40,
+    "ip_limit": {
+      "requests_per_second": 10,
+      "burst": 20
+    }
   }
 }
 ```
 
-## 运行
+### Client Configuration (`.rai` files)
+
+Client configuration files contain encryption settings used by both the server and SDK. The server monitors these files in the `-rai` directory.
+
+```json
+{
+  "version": "1.0.0",
+  "server": {
+    "host": "http://localhost",
+    "port": 8840,
+    "base_path": "/relayapi/"
+  },
+  "crypto": {
+    "method": "aes",
+    "aes_key": "your-aes-key",
+    "aes_iv_seed": "your-iv-seed"
+  }
+}
+```
+
+You can customize the `crypto` section as needed, just ensure the server and SDK use the same configuration.
+
+## Development
+
+### Project Structure
+
+```
+server/
+├── cmd/
+│   └── server/
+│       └── main.go         # Server entry point
+├── internal/
+│   ├── config/            # Configuration management
+│   ├── crypto/            # Encryption implementation
+│   ├── handlers/          # Request handlers
+│   ├── middleware/        # Middleware components
+│   ├── models/            # Data models
+│   └── services/          # Business logic
+├── rai/                   # Client configuration files
+└── config.json            # Server configuration
+```
+
+### Core Components
+
+1. **Configuration Management** (`internal/config/`)
+   - Load and validate server configuration
+   - Monitor client configuration files
+   - Handle configuration updates
+
+2. **Encryption** (`internal/crypto/`)
+   - Implement AES encryption/decryption
+   - Manage encryption keys
+   - Handle token generation and validation
+
+3. **Request Handling** (`internal/handlers/`)
+   - Handle incoming API requests
+   - Validate tokens
+   - Forward requests to AI providers
+
+4. **Middleware** (`internal/middleware/`)
+   - Authentication
+   - Rate limiting
+   - Logging
+   - Request/Response transformation
+
+### Adding New Features
+
+1. **New AI Provider**
+   ```go
+   // internal/handlers/provider.go
+   func (h *Handler) handleProviderRequest(c *gin.Context) {
+       // Implement provider-specific handling logic
+   }
+   ```
+
+2. **New Middleware**
+   ```go
+   // internal/middleware/custom.go
+   func CustomMiddleware() gin.HandlerFunc {
+       return func(c *gin.Context) {
+           // Implement middleware logic
+       }
+   }
+   ```
+
+3. **New Configuration Option**
+   ```go
+   // internal/config/config.go
+   type Config struct {
+       // Add new configuration fields
+   }
+   ```
+
+### Testing
 
 ```bash
-# 直接运行
-./bin/relayapi-server
+# Run all tests
+go test ./...
 
-# 或使用 go run
-go run cmd/server/main.go
+# Run tests with coverage
+go test -cover ./...
+
+# Run tests for a specific package
+go test ./internal/crypto
 ```
 
-## API 使用
+## Deployment
 
-1. 健康检查：
-```bash
-curl http://localhost:8840/health
-```
+1. **Build**
+   ```bash
+   go build -o relayapi cmd/server/main.go
+   ```
 
-2. OpenAI API 代理：
-```bash
-# 使用 URL 参数传递令牌
-curl -X POST "http://localhost:8840/api/openai/v1/chat/completions?token=your_token" \
-  -H "Content-Type: application/json" \
-  -d '{"model": "gpt-3.5-turbo", "messages": [{"role": "user", "content": "Hello"}]}'
+2. **Run**
+   ```bash
+   ./relayapi -rai /path/to/rai/dir -config /path/to/config.json
+   ```
 
-# 或者在路径中包含令牌
-curl -X POST "http://localhost:8840/api/openai/v1/chat/completions" \
-  -H "Content-Type: application/json" \
-  -d '{"model": "gpt-3.5-turbo", "messages": [{"role": "user", "content": "Hello"}]}'
-```
+3. **Monitor**
+   - View `debug.log` for detailed logs when running with `-d`
+   - Monitor server status through `/health` endpoint
+   - Check console output for real-time statistics
 
-## 客户端使用
+## Contributing
 
-对于使用 OpenAI 官方客户端的应用，只需要：
+1. Fork the repository
+2. Create your feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a Pull Request
 
-1. 将 base URL 修改为 RelayAPI 服务器地址
-2. 将 API Key 作为 URL 参数传递
+## License
 
-例如，使用 OpenAI Node.js 客户端：
-
-```javascript
-import OpenAI from 'openai';
-
-const openai = new OpenAI({
-  baseURL: 'http://localhost:8840/api/openai/v1',
-  apiKey: 'your_token', // 这里的令牌会自动被添加到 URL 参数中
-});
-
-const response = await openai.chat.completions.create({
-  model: 'gpt-3.5-turbo',
-  messages: [{ role: 'user', content: 'Hello!' }],
-});
-```
-
-或者使用 Python 客户端：
-
-```python
-from openai import OpenAI
-
-client = OpenAI(
-    base_url='http://localhost:8840/api/openai/v1',
-    api_key='your_token',  # 这里的令牌会自动被添加到 URL 参数中
-)
-
-response = client.chat.completions.create(
-    model="gpt-3.5-turbo",
-    messages=[{"role": "user", "content": "Hello!"}]
-) 
+This project is licensed under the MIT License - see the [LICENSE](../LICENSE) file for details.
