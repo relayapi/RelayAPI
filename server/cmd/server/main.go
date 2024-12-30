@@ -44,6 +44,9 @@ func main() {
 	// 创建 Gin 引擎
 	router := gin.Default()
 
+	// 添加路径规范化中间件
+	router.Use(middleware.PathNormalizationMiddleware())
+
 	// 添加日志中间件
 	router.Use(logger.Middleware(cfg))
 

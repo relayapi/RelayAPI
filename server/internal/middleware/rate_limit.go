@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"net/http"
+	"strings"
 	"sync"
 
 	"github.com/gin-gonic/gin"
@@ -37,6 +38,18 @@ func (i *IPRateLimiter) GetLimiter(ip string) *rate.Limiter {
 	}
 
 	return limiter
+}
+
+func PathNormalizationMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		path := c.Request.URL.Path
+		normalizedPath := strings.ReplaceAll(path, "//", "/")
+		for strings.Contains(normalizedPath, "//") {
+			normalizedPath = strings.ReplaceAll(normalizedPath, "//", "/")
+		}
+		c.Request.URL.Path = normalizedPath
+		c.Next()
+	}
 }
 
 // RateLimit 创建一个包含全局限流和 IP 限流的中间件
