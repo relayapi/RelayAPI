@@ -277,24 +277,10 @@ func (s *Stats) StartConsoleDisplay(stopChan chan struct{}) {
 	fmt.Printf("\n%s🚀 服务启动端口 %s:8840%s\n\n",
 		"\033[36m", s.ServerAddr, "\033[0m")
 
-	// 倒计时启动统计界面，使用动画效果
-	countdownText := "正在启动仪表盘"
-	spinIdx = 0 // 重置 spinIdx
-	for i := 2; i > 0; i-- {
-		// 每秒显示 10 帧动画
-		for frame := 0; frame < 10; frame++ {
-			spinChar := spinChars[frame%len(spinChars)]
-			// 使用不同颜色
-			color := gradientColors[frame%(len(gradientColors))]
-			fmt.Printf("\r%s%s %s %d 秒%s", color, spinChar, countdownText, i, "\033[0m")
-			time.Sleep(80 * time.Millisecond)
-		}
-	}
-
 	// 启动提示使用渐变动画
-	startText := "正在初始化..."
-	spinIdx = 0               // 重置 spinIdx
-	for i := 0; i < 15; i++ { // 显示更长的动画
+	startText := "正在初始化统计界面..."
+	spinIdx = 0
+	for i := 0; i < 8; i++ { // 缩短动画时间
 		color := gradientColors[i%len(gradientColors)]
 		fmt.Printf("\r%s%s %s\033[0m", color, spinChars[spinIdx], startText)
 		spinIdx = (spinIdx + 1) % len(spinChars)
