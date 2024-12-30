@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="relayapi",
+    name="relayapi-sdk",
     version="1.0.0",
     description="RelayAPI Python SDK - A client library for RelayAPI Server",
     author="RelayAPI Team",

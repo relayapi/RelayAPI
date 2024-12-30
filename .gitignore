@@ -37,3 +37,5 @@ Thumbs.db
 server/bin/relayapi-server
 *.egg-info/
 *.pyc
+backend-sdk/python/dist/*
+backend-sdk/python/build/*
