@@ -39,3 +39,4 @@ server/bin/relayapi-server
 *.pyc
 backend-sdk/python/dist/*
 backend-sdk/python/build/*
+release/*

@@ -51,12 +51,12 @@ sequenceDiagram
 
 ```bash
 # 后端 SDK 安装
-npm install @relayapi/sdk   # Node.js
-pip install relayapi        # Python
+npm install relayapi-sdk    # Node.js (@https://www.npmjs.com/package/relayapi-sdk)
+pip install relayapi-sdk    # Python (@https://pypi.org/project/relayapi-sdk/)
 go get github.com/relayapi/sdk  # Go
 
-# RelayAPI Server 部署
-docker pull relayapi/server
+# RelayAPI Server 快速安装
+curl -fsSL https://relayapi.com/get_relayapi.sh | sh
 ```
 
 ### 后端使用示例
