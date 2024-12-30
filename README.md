@@ -1,203 +1,165 @@
+<div align="center">
+  <h1>🚀 RelayAPI</h1>
+  <p><strong>安全、高性能的 API 代理层，让前端安全调用 AI 服务</strong></p>
+  <p>
+    <a href="https://github.com/relayapi/RelayAPI/stargazers">
+      <img src="https://img.shields.io/github/stars/relayapi/RelayAPI?style=flat-square" alt="stars">
+    </a>
+    <a href="https://github.com/relayapi/RelayAPI/network/members">
+      <img src="https://img.shields.io/github/forks/relayapi/RelayAPI?style=flat-square" alt="forks">
+    </a>
+    <a href="https://github.com/relayapi/RelayAPI/issues">
+      <img src="https://img.shields.io/github/issues/relayapi/RelayAPI?style=flat-square" alt="issues">
+    </a>
+    <a href="https://github.com/relayapi/RelayAPI/blob/main/LICENSE">
+      <img src="https://img.shields.io/github/license/relayapi/RelayAPI?style=flat-square" alt="license">
+    </a>
+  </p>
+</div>
 
-```markdown:README.md
-# RelayAPI
+## 🌟 特性
 
-RelayAPI 是一个安全的 API 代理层，专门用于解决前端调用需要 API Key 的服务（如 OpenAI）时的安全问题。通过多种加密方式和访问控制，实现安全可控的 API 调用，支持多种语言的 SDK ，前端可直接使用各 AI 厂商的标准 API ，仅修改 BaseURL, 无需改动任何代码。
+- 🔒 **零泄露风险**: API Key 完全在服务端加密存储，前端无法接触敏感信息
+- 🚀 **高性能设计**: 基于 Go 实现的高性能代理服务，支持大规模并发
+- 🎯 **精准控制**: 支持按次数、时间、IP 等多维度的访问控制
+- 🔌 **即插即用**: 支持 90+ AI 服务商，前端零改动，仅需修改 BaseURL
+- 📊 **实时监控**: 内置调用量统计、性能监控、错误追踪等功能
+- 🛡️ **多重防护**: 支持 IP 白名单、调用频率限制、并发控制等安全特性
+- 🌐 **多语言 SDK**: 提供 Node.js、Python、Go 等多语言 SDK
 
-## 特性
+## 🎯 它是如何工作的？
 
-- 🔒 安全性：使用 多种加密方式 保护敏感信息
-- 🚀 高性能：基于 Go 实现的高并发服务器
-- 🎯 精确控制：支持调用次数和时间限制
-- 🔌 多语言支持：提供多种语言的加密 SDK
-- 🛡️ API Key 保护：敏感信息不在前端暴露
-- 📊 使用统计：支持调用量统计和监控
+```mermaid
+sequenceDiagram
+    participant F as Frontend
+    participant B as Backend
+    participant R as RelayAPI
+    participant A as AI Service
 
-## 架构
-
-```ascii
-步骤1: Backend 生成加密令牌
-┌─────────┐    ┌──────────────┐
-│ Backend ├────┤ RelayAPI SDK │
-│         │    │  加密模块     │
-└─────────┘    └──────────────┘
-
-步骤2: Frontend 使用令牌调用服务
-┌─────────┐    ┌─────────────┐    ┌──────────┐
-│ Frontend├────┤ RelayAPI    ├────┤ OpenAI   │
-│         │    │ Server      │    │ API      │
-└─────────┘    └─────────────┘    └──────────┘
+    B->>R: 1. 获取公钥
+    B->>B: 2. 生成加密令牌
+    B->>F: 3. 返回令牌
+    F->>R: 4. API 调用 + 令牌
+    R->>R: 5. 验证和解密
+    R->>A: 6. 转发请求
+    A->>F: 7. 返回结果
 ```
 
-## 工作流程
-
-1. Backend 使用 RelayAPI SDK 生成加密令牌
-   - 设置调用限制（次数/时间）
-   - 使用公钥加密 API Key 和参数
-   - 生成加密令牌返回给前端
-
-2. Frontend 调用 API
-   - 携带加密令牌请求 RelayAPI Server
-   - RelayAPI Server 验证并解密令牌
-   - 使用解密后的 API Key 调用目标服务
-   - 返回响应结果给前端
-
-## 实现步骤
-
-### 1. RelayAPI Server 开发 (Go)
-
-1. 基础框架搭建
-   - 使用 Gin 框架搭建 HTTP 服务
-   - 配置数据库（PostgresSQL）用于存储调用记录
-   - 实现健康检查接口
-
-2. 加密系统实现
-   - 实现 ECC 加密/解密功能
-   - 生成并管理公私钥对
-   - 实现令牌验证和解密
-
-3. 访问控制
-   - 实现调用次数限制
-   - 实现时间有效期检查
-   - 实现并发控制
-
-4. API 代理功能
-   - 实现 OpenAI API 代理
-   - 错误处理和重试机制
-   - 响应数据转发
-
-### 2. RelayAPI 加密 SDK 开发
-
-1. 核心功能
-   - 参数加密
-   - 令牌生成
-   - 调用限制设置
-
-2. 多语言支持
-   - Node.js SDK
-   - Python SDK
-   - Java SDK
-   - Go SDK
-
-### 3. 部署和运维
-
-1. 服务器部署
-   - Docker 容器化
-   - 负载均衡配置
-   - 监控系统搭建
-
-2. 文档编写
-   - API 文档
-   - SDK 使用文档
-   - 部署文档
-
-## 快速开始
+## 🚀 快速开始
 
 ### 安装
 
 ```bash
-# 后端安装加密 SDK
-pnpm install @relayapi/sdk
+# 后端 SDK 安装
+npm install @relayapi/sdk   # Node.js
+pip install relayapi        # Python
+go get github.com/relayapi/sdk  # Go
 
-# RelayAPI Server 独立部署
+# RelayAPI Server 部署
 docker pull relayapi/server
 ```
 
 ### 后端使用示例
 
 ```typescript
-import { RelayAPISDK } from '@relayapi/sdk'
+import { RelayAPI } from '@relayapi/sdk'
 
-const sdk = new RelayAPISDK({
+const relay = new RelayAPI({
   publicKey: 'YOUR_PUBLIC_KEY'
 })
-const URL = 'https://relay.api.example.com/'
+
 // 生成加密令牌
-const token = await sdk.generateToken({
-  apiKey: 'sk-...',
-  maxCalls: 100,
-  expireTime: '2024-12-31',
-  allowedModels: ['gpt-4']
+const token = await relay.generateToken({
+  provider: 'openai',           // AI 服务商
+  apiKey: 'sk-xxx',            // API Key
+  maxCalls: 100,               // 最大调用次数
+  expireIn: '24h',             // 有效期
+  allowedModels: ['gpt-4']     // 允许使用的模型
 })
 
-// 返回令牌给前端
-const url = new URL(URL);
-url.searchParams.append('token', token);
-return { URL: url.toString() };
+// 返回给前端
+return { 
+  baseUrl: 'https://your-relay-server.com',
+  token 
+}
 ```
 
 ### 前端使用示例
 
 ```typescript
-// 使用后端生成的令牌调用 API
-const response = await fetch(URL, {
-  method: 'POST',
-  body: JSON.stringify({
-    model: 'gpt-4',
-    messages: [...]
-  })
+// 使用 OpenAI 官方 SDK，仅需修改 baseURL
+import OpenAI from 'openai'
+
+const openai = new OpenAI({
+  baseURL: 'https://your-relay-server.com',
+  apiKey: token // 使用后端生成的令牌
+})
+
+const response = await openai.chat.completions.create({
+  model: 'gpt-4',
+  messages: [{ role: 'user', content: 'Hello!' }]
 })
 ```
 
-## 安全说明
+## 🌈 支持的 AI 服务商
 
-1. 私钥仅在 RelayAPI Server 端保存
-2. 后端服务器通过公钥生成加密令牌
-3. 令牌包含使用限制和过期时间
-4. 所有敏感信息经过加密，前端仅能访问授权范围内的 API
+### 主流 AI 模型服务
+- OpenAI (GPT-4, GPT-3.5)
+- Anthropic (Claude)
+- Google AI (PaLM, Gemini)
+- Mistral AI
+- Cohere
+- AI21 Labs
+- Hugging Face
 
-## 贡献指南
+### 云服务商 AI
+- Azure OpenAI
+- AWS Bedrock
+- Google Cloud AI
+- 阿里云通义千问
+- 百度文心一言
+- 腾讯混元
+- 华为盘古
 
-欢迎提交 Pull Request 和 Issue。
+### 专业领域 AI
+- Stability AI (图像生成)
+- DeepL (翻译)
+- AssemblyAI (语音识别)
+- Speechmatics (语音处理)
+- RunwayML (视频生成)
+- Wolfram Alpha (科学计算)
 
-## 许可证
+> 完整支持列表请查看 [支持的服务商列表](docs/providers.md)
 
-MIT
-```
+## 🔐 安全说明
 
-这个版本更准确地描述了系统的工作流程：
-1. 后端使用 SDK 和公钥生成加密令牌
-2. 前端使用令牌直接与 RelayAPI Server 通信
-3. RelayAPI Server 使用私钥解密并验证令牌
-4. 最后代理调用目标 API
+1. **零信任架构**
+   - API Key 仅在服务端存储和使用
+   - 所有令牌均为一次性使用
+   - 支持 IP 绑定和地理位置限制
 
-这种方式确保了：
-- API Key 等敏感信息只在后端和 RelayAPI Server 之间传递
-- 前端只能在授权的范围内使用 API
-- 通过令牌实现了精确的访问控制
+2. **多重加密**
+   - 采用 AES ECC等多种加密方式
+   - 支持令牌防重放攻击
+   - 全链路 HTTPS 加密
 
-### 具体实现步骤和技术选型
+3. **访问控制**
+   - 精确的调用次数限制
+   - 基于时间的令牌失效
+   - 并发请求控制
+   - IP 白名单机制
 
-1. **后端技术栈**
-   - 主框架：Go + Gin
-   - 数据库：PostgresSQL（日志记录）
-   - 加密：golang.org/x/crypto（ECC 实现）
-   - API 文档：Swagger
 
-2. **开发流程**
+## 🤝 贡献指南
 
-第一阶段：核心功能实现
-- 搭建基础项目结构
-- 实现 ECC 加密解密功能
-- 实现基础的 API 代理功能
-- 编写单元测试
+我们欢迎所有形式的贡献，无论是新功能、文档改进还是问题反馈！
 
-第二阶段：SDK 开发
-- 实现 Node.js SDK
-- 实现参数加密功能
-- 实现请求构建功能
-- 编写 SDK 文档
+1. Fork 本仓库
+2. 创建特性分支 (\`git checkout -b feature/AmazingFeature\`)
+3. 提交改动 (\`git commit -m 'Add some AmazingFeature'\`)
+4. 推送到分支 (\`git push origin feature/AmazingFeature\`)
+5. 提交 Pull Request
 
-第三阶段：完善功能
-- 实现调用限制
-- 实现监控统计
-- 实现多语言 SDK
-- 完善错误处理
+## 📄 开源协议
 
-第四阶段：部署和优化
-- 容器化部署
-- 性能优化
-- 监控系统
-- 文档完善
-
-这个项目的关键在于安全性和性能的平衡，建议先实现核心功能的原型，然后再逐步完善其他功能。
+本项目采用 [MIT](LICENSE) 开源协议。
