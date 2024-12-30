@@ -43,13 +43,12 @@ sequenceDiagram
     participant AI Service as AI服务
 
     Note over Backend,RelayAPI: 共享相同的 .rai 文件
-    Backend->>RelayAPI: 1. 使用 .rai 启动服务器
-    Backend->>Backend: 2. 用 API key 生成 URL
-    Backend->>Frontend: 3. 发送基础 URL
-    Frontend->>RelayAPI: 4. 发起 API 调用
-    RelayAPI->>AI Service: 5. 使用真实 API key 转发
-    AI Service->>RelayAPI: 6. 返回响应
-    RelayAPI->>Frontend: 7. 转发响应
+    Backend->>Backend: 1. 用 API key 生成 URL
+    Backend->>Frontend: 2. 发送基础 URL
+    Frontend->>RelayAPI: 3. 发起 API 调用
+    RelayAPI->>AI Service: 4. 使用真实 API key 转发
+    AI Service->>RelayAPI: 5. 返回响应
+    RelayAPI->>Frontend: 6. 转发响应
 ```
 
 ## 🚀 快速开始
@@ -71,11 +70,10 @@ pip install relayapi-sdk    # Python (@https://pypi.org/project/relayapi-sdk/)
 
 ### 第一步：启动服务器
 
-创建 `default.rai` 文件，设置加密参数：
+创建、修改 `default.rai` 文件，设置加密参数：
 
 ```json
 {
-    // 前后端共享相同的 .rai 文件
   "crypto": {
     "method": "aes",
     "aes_key": "你的密钥",
@@ -84,10 +82,10 @@ pip install relayapi-sdk    # Python (@https://pypi.org/project/relayapi-sdk/)
 }
 ```
 
-启动服务器：
+启动服务器 [服务器说明](server/README.md)：
 
 ```bash
-relayapi-server -rai ./rai -d
+./relayapi-server -rai ./default.rai 
 ```
 
 ### 第二步：生成基础 URL（后端）
@@ -124,23 +122,6 @@ const response = await openai.chat.completions.create({
 });
 ```
 
-
-### 配置
-
-RelayAPI 需要两种配置文件：
-
-1. `config.json` - 服务器配置文件（必需）
-   - 包含服务器设置、速率限制和日志配置
-   - 启动服务器时必须存在
-   - 示例：[服务器配置指南](server/README.md)
-
-2. `default.rai` - 客户端配置文件（如不存在则自动生成）
-   - 包含加密设置和服务器连接信息
-   - 用于 SDK 生成令牌和连接服务器
-   - 可以从文件加载或直接传入配置对象
-   - 示例：[JavaScript SDK 指南](backend-sdk/JavaScript/README.md) | [Python SDK 指南](backend-sdk/python/README.md)
-
-详细配置选项和示例请参考[配置指南](docs/configuration_cn.md)。
 
 
 ## 🌈 支持的 AI 服务商
@@ -173,6 +154,25 @@ RelayAPI 需要两种配置文件：
 
 > 完整支持列表请查看[支持的服务商列表](docs/providers.md)
 
+
+### 配置
+
+RelayAPI 需要两种配置文件：
+
+1. `config.json` - 服务器配置文件（必需）
+   - 包含服务器设置、速率限制和日志配置
+   - 启动服务器时必须存在
+   - 示例：[服务器配置指南](server/README.md)
+
+2. `default.rai` - 客户端配置文件（如不存在则自动生成）
+   - 包含加密设置和服务器连接信息
+   - 用于 SDK 生成令牌和连接服务器
+   - 可以从文件加载或直接传入配置对象
+   - 示例：[JavaScript SDK 指南](backend-sdk/JavaScript/README.md) | [Python SDK 指南](backend-sdk/python/README.md)
+
+详细配置选项和示例请参考[配置指南](docs/configuration_cn.md)。
+
+
 ## 🔐 安全说明
 
 1. **零信任架构**
@@ -204,95 +204,3 @@ RelayAPI 需要两种配置文件：
 ## 📄 开源协议
 
 本项目采用 [MIT](LICENSE) 开源协议。
-
-# RelayAPI
-
-[English](README.md)
-
-RelayAPI 是一个安全的 API 代理服务，帮助您在前端安全地使用各种 AI 服务，无需暴露 API 密钥。
-
-## 三步上手 RelayAPI
-
-### 第一步：启动服务器
-创建 `default.rai` 文件，设置加密参数：
-```json
-{
-  "crypto": {
-    "method": "aes",
-    "aes_key": "你的密钥",
-    "aes_iv_seed": "你的种子值"
-  }
-}
-```
-启动服务器：
-```bash
-relayapi-server -rai ./rai -d
-```
-
-### 第二步：生成基础 URL（后端）
-在后端代码中使用相同的 `default.rai` 文件：
-```python
-from relayapi_sdk import RelayAPIClient
-
-client = RelayAPIClient("default.rai")
-base_url = client.generate_url(
-    api_key="你的-openai-api-key",
-    max_calls=100,
-    expire_seconds=3600
-)
-# 将 base_url 发送给前端
-```
-
-### 第三步：前端使用
-在前端代码中使用基础 URL：
-```javascript
-import OpenAI from 'openai';
-
-const openai = new OpenAI({
-    baseURL: '从后端获取的base_url',
-    apiKey: '不需要填写api-key'
-});
-
-const response = await openai.chat.completions.create({
-    model: 'gpt-3.5-turbo',
-    messages: [{ role: 'user', content: '你好！' }]
-});
-```
-
-
-### 工作原理
-
-```mermaid
-sequenceDiagram
-    participant Frontend as 前端
-    participant Backend as 后端
-    participant RelayAPI as RelayAPI服务
-    participant AI Service as AI服务
-
-    Note over Backend,RelayAPI: 共享相同的 .rai 文件
-    Backend->>RelayAPI: 1. 使用 .rai 启动服务器
-    Backend->>Backend: 2. 用 API key 生成 URL
-    Backend->>Frontend: 3. 发送基础 URL
-    Frontend->>RelayAPI: 4. 发起 API 调用
-    RelayAPI->>AI Service: 5. 使用真实 API key 转发
-    AI Service->>RelayAPI: 6. 返回响应
-    RelayAPI->>Frontend: 7. 转发响应
-```
-
-主要优势：
-- 🔒 API 密钥永不暴露给前端
-- 🎯 精细的访问控制
-- 🚀 简单易用，快速部署
-
-## 安装
-
-```bash
-# RelayAPI 服务器快速安装
-curl -fsSL https://relayapi.com/get_relayapi.sh | sh
-```
-
-```bash
-# 后端 SDK 安装
-npm install relayapi-sdk    # Node.js (@https://www.npmjs.com/package/relayapi-sdk)
-pip install relayapi-sdk    # Python (@https://pypi.org/project/relayapi-sdk/)
-```

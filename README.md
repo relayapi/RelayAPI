@@ -19,33 +19,34 @@
     </a>
   </p>
 </div>
-
 ## 🌟 Features
 
-- 🔒 **Zero Risk of Leakage**: API Keys are fully encrypted and stored on the server side, frontend has no access to sensitive information
-- 🚀 **High Performance**: High-performance proxy service implemented in Go, supporting large-scale concurrency
-- 🎯 **Precise Control**: Support multi-dimensional access control by calls, time, IP, etc.
-- 🔌 **Plug and Play**: Support 90+ AI service providers, zero frontend changes, only need to modify BaseURL
-- 📊 **Real-time Monitoring**: Built-in call volume statistics, performance monitoring, error tracking, etc.
-- 🛡️ **Multiple Protection**: Support IP whitelist, call rate limiting, concurrency control, and other security features
-- 🌐 **Multi-language SDKs**: Provide Node.js, Python, Go, and other language SDKs
+RelayAPI is a secure API proxy service that helps you use various AI services safely on the frontend without exposing your API keys.
 
-## 🎯 How Does It Work?
+- 🔒 **Zero Leak Risk**: API keys are stored encrypted on the server, never exposed to the frontend.
+- 🚀 **High Performance Design**: A high-performance proxy service implemented in Go, supporting large-scale concurrency.
+- 🎯 **Precise Control**: Supports multi-dimensional access control based on usage count, time, IP, etc.
+- 🔌 **Plug and Play**: Supports 90+ AI service providers, requiring zero changes on the frontend, just modify the BaseURL.
+- 📊 **Real-time Monitoring**: Built-in call volume statistics, performance monitoring, error tracking, and more.
+- 🛡️ **Multiple Protections**: Supports IP whitelisting, call frequency limits, concurrency control, and other security features.
+- 🌐 **Multi-language SDK**: Provides SDKs for Node.js, Python, Go, and more.
+
+## 🎯 How It Works
 
 ```mermaid
 sequenceDiagram
-    participant F as Frontend
-    participant B as Backend
-    participant R as RelayAPI
-    participant A as AI Service
+    participant Frontend as Frontend
+    participant Backend as Backend
+    participant RelayAPI as RelayAPI Service
+    participant AI Service as AI Service
 
-    B->>R: 1. Get Public Key
-    B->>B: 2. Generate Encrypted Token
-    B->>F: 3. Return Token
-    F->>R: 4. API Call + Token
-    R->>R: 5. Verify and Decrypt
-    R->>A: 6. Forward Request
-    A->>F: 7. Return Result
+    Note over Backend,RelayAPI: Sharing the same .rai file
+    Backend->>Backend: 1. Generate URL using API key
+    Backend->>Frontend: 2. Send base URL
+    Frontend->>RelayAPI: 3. Initiate API call
+    RelayAPI->>AI Service: 4. Forward using real API key
+    AI Service->>RelayAPI: 5. Return response
+    RelayAPI->>Frontend: 6. Forward response
 ```
 
 ## 🚀 Quick Start
@@ -53,78 +54,69 @@ sequenceDiagram
 ### Installation
 
 ```bash
-# RelayAPI Server Quick Install
-curl -fsSL https://relayapi.com/get_relayapi.sh | sh
+# Quick installation of RelayAPI Server
+curl -fsSL https://raw.githubusercontent.com/relayapi/RelayAPI/refs/heads/main/get_relayapi.sh | sh
 ```
 
 ```bash
-# Backend SDK Installation
+# Backend SDK installation
 npm install relayapi-sdk    # Node.js (@https://www.npmjs.com/package/relayapi-sdk)
 pip install relayapi-sdk    # Python (@https://pypi.org/project/relayapi-sdk/)
 ```
 
-### Configuration
+## Three Steps to Get Started with RelayAPI
 
-RelayAPI requires two types of configuration files:
+### Step 1: Start the Server
 
-1. `config.json` - Server configuration file (required)
-   - Contains server settings, rate limits, and logging configuration
-   - Must be present when starting the server
-   - Example: [Server Configuration Guide](server/README.md)
+Create and modify the `default.rai` file to set encryption parameters:
 
-2. `default.rai` - Client configuration file (auto-generated if not present)
-   - Contains encryption settings and server connection information
-   - Used by SDKs to generate tokens and connect to the server
-   - Can be loaded from file or passed as object
-   - Example: [JavaScript SDK Guide](backend-sdk/JavaScript/README.md) | [Python SDK Guide](backend-sdk/python/README.md)
-
-For detailed configuration options and examples, please refer to our [Configuration Guide](docs/configuration.md).
-
-### Backend Usage Example
-
-```typescript
-import { RelayAPIClient } from 'relayapi-sdk';
-import fs from 'fs/promises';
-
-// Load configuration file
-const configContent = await fs.readFile('default.rai', 'utf-8');
-const config = JSON.parse(configContent);
-
-// Create client instance
-const client = new RelayAPIClient(config);
-
-// Generate encrypted token
-const token = client.createToken({
-    apiKey: 'your-api-key',     // API Key
-    maxCalls: 100,              // Maximum number of calls
-    expireSeconds: 3600,        // Expiration time (seconds)
-    provider: 'openai'          // AI service provider
-});
-
-// Generate API URL
-const baseUrl = client.generateUrl(token);
-console.log('Base URL:', baseUrl);
-// Output example: http://localhost:8840/relayapi/?token=xxxxx&rai_hash=xxxxx
-
-// Return to frontend
-return { baseUrl, token };
+```json
+{
+  "crypto": {
+    "method": "aes",
+    "aes_key": "your-secret-key",
+    "aes_iv_seed": "your-seed-value"
+  }
+}
 ```
 
-### Frontend Usage Example
+Start the server [Server Instructions](server/README.md):
 
-```typescript
+```bash
+./relayapi-server -rai ./default.rai 
+```
+
+### Step 2: Generate Base URL (Backend)
+
+Use the same `default.rai` file in your backend code:
+
+```python
+from relayapi_sdk import RelayAPIClient
+
+client = RelayAPIClient("default.rai")
+base_url = client.generate_url(
+    api_key="your-openai-api-key",
+    max_calls=100,
+    expire_seconds=3600
+)
+# Send base_url to the frontend
+```
+
+### Step 3: Use in Frontend
+
+Use the base URL in your frontend code:
+
+```javascript
 import OpenAI from 'openai';
 
 const openai = new OpenAI({
-    baseURL: baseUrl,
-    apiKey: 'not-needed'  // API Key is already included in the token
+    baseURL: 'base_url obtained from backend',
+    apiKey: 'no need to fill in api-key'
 });
 
 const response = await openai.chat.completions.create({
-    messages: [{ role: 'user', content: 'Hello!' }],
     model: 'gpt-3.5-turbo',
-    temperature: 0.7,
-    maxTokens: 1000
+    messages: [{ role: 'user', content: 'Hello!' }]
 });
 ```
 
@@ -139,16 +131,16 @@ const response = await openai.chat.completions.create({
 - AI21 Labs
 - Hugging Face
 
-### Cloud Provider AI
+### Cloud Service AI
 - Azure OpenAI
 - AWS Bedrock
 - Google Cloud AI
 - Alibaba Cloud Tongyi Qianwen
-- Baidu ERNIE
+- Baidu Wenxin Yiyan
 - Tencent Hunyuan
 - Huawei Pangu
 
-### Professional Domain AI
+### Specialized AI
 - Stability AI (Image Generation)
 - DeepL (Translation)
 - AssemblyAI (Speech Recognition)
@@ -156,36 +148,53 @@ const response = await openai.chat.completions.create({
 - RunwayML (Video Generation)
 - Wolfram Alpha (Scientific Computing)
 
-> For a complete list, please check [Supported Providers List](docs/providers.md)
+> For the complete list of supported providers, please check the [Supported Providers List](docs/providers.md).
+
+### Configuration
+
+RelayAPI requires two configuration files:
+
+1. `config.json` - Server configuration file (required)
+   - Contains server settings, rate limits, and logging configurations.
+   - Must exist when starting the server.
+   - Example: [Server Configuration Guide](server/README.md).
+
+2. `default.rai` - Client configuration file (automatically generated if not present)
+   - Contains encryption settings and server connection information.
+   - Used by the SDK to generate tokens and connect to the server.
+   - Can be loaded from a file or passed directly as a configuration object.
+   - Example: [JavaScript SDK Guide](backend-sdk/JavaScript/README.md) | [Python SDK Guide](backend-sdk/python/README.md).
+
+For detailed configuration options and examples, please refer to the [Configuration Guide](docs/configuration_cn.md).
 
 ## 🔐 Security Notes
 
 1. **Zero Trust Architecture**
-   - API Keys are only stored and used on the server side
-   - All tokens are one-time use
-   - Support IP binding and geolocation restrictions
+   - API keys are stored and used only on the server.
+   - All tokens are one-time use.
+   - Supports IP binding and geographical location restrictions.
 
 2. **Multiple Encryption**
-   - Using AES, ECC, and other encryption methods
-   - Support token replay attack prevention
-   - Full HTTPS encryption throughout
+   - Uses various encryption methods such as AES, ECC, etc.
+   - Supports token replay attack prevention.
+   - End-to-end HTTPS encryption.
 
 3. **Access Control**
-   - Precise call count limits
-   - Time-based token expiration
-   - Concurrent request control
-   - IP whitelist mechanism
+   - Precise call count limits.
+   - Time-based token expiration.
+   - Concurrency request control.
+   - IP whitelisting mechanism.
 
-## 🤝 Contribution Guide
+## 🤝 Contribution Guidelines
 
-We welcome all forms of contributions, whether new features, documentation improvements, or issue feedback!
+We welcome all forms of contributions, whether it's new features, documentation improvements, or issue feedback!
 
-1. Fork this repository
-2. Create a feature branch (\`git checkout -b feature/AmazingFeature\`)
-3. Commit changes (\`git commit -m 'Add some AmazingFeature'\`)
-4. Push to branch (\`git push origin feature/AmazingFeature\`)
-5. Submit Pull Request
+1. Fork this repository.
+2. Create a feature branch (`git checkout -b feature/AmazingFeature`).
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`).
+4. Push to the branch (`git push origin feature/AmazingFeature`).
+5. Submit a Pull Request.
 
-## 📄 License
+## 📄 Open Source License
 
-This project is licensed under the [MIT](LICENSE) License.
+This project is licensed under the [MIT](LICENSE) open-source license.
