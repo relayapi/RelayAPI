@@ -62,7 +62,7 @@ curl -fsSL https://relayapi.com/get_relayapi.sh | sh
 ### 后端使用示例
 
 ```typescript
-import { RelayAPI } from '@relayapi/sdk'
+import { RelayAPI } from '@relayapi-sdk'
 
 const relay = new RelayAPI({
   publicKey: 'YOUR_PUBLIC_KEY'

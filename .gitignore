@@ -40,3 +40,4 @@ server/bin/relayapi-server
 backend-sdk/python/dist/*
 backend-sdk/python/build/*
 release/*
+myRelayAPI/*
