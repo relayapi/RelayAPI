@@ -1,7 +1,7 @@
 package logger
 
 import (
-	"fmt"
+	"log"
 
 	"github.com/hokaccha/go-prettyjson"
 )
@@ -22,13 +22,13 @@ func NewConsoleLogWriter() *ConsoleLogWriter {
 	}
 }
 
-func (w *ConsoleLogWriter) Write(log map[string]interface{}) error {
-	output, err := w.formatter.Marshal(log)
+func (w *ConsoleLogWriter) Write(log1 map[string]interface{}) error {
+	output, err := w.formatter.Marshal(log1)
 	if err != nil {
 		return err
 	}
 
-	fmt.Println(string(output))
+	log.Println(string(output))
 	return nil
 }
 
