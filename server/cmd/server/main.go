@@ -26,7 +26,7 @@ func main() {
 	// 禁用 Gin 的默认日志输出
 	gin.SetMode(gin.ReleaseMode)
 	gin.DefaultWriter = os.Stdout
-	log.SetFlags(log.Ldate | log.Ltime | log.Lmicroseconds)
+	log.SetFlags(0) // 移除默认的日志前缀
 
 	// 创建停止通道
 	stopChan := make(chan struct{})
@@ -40,7 +40,8 @@ func main() {
 	clientConfig := flag.String("rai", "", "客户端配置文件路径或目录 (.rai)")
 	flag.Parse()
 
-	log.Println("📚 Loading configuration files...")
+	log.Println("📚 Loading configuration files", *serverConfig)
+	log.Println("📚 Loading rai file:", *clientConfig)
 	// 加载配置
 	cfg, err := config.LoadConfig(*serverConfig, *clientConfig)
 	if err != nil {
@@ -67,7 +68,8 @@ func main() {
 	router := gin.New()
 
 	// 创建统计服务
-	statsService := services.NewStats()
+	serverAddr := fmt.Sprintf("%s:%d", cfg.Server.Server.Host, cfg.Server.Server.Port)
+	statsService := services.NewStats("1.0.0", serverAddr)
 
 	// 启动统计信息显示
 	go statsService.StartConsoleDisplay(stopChan)
@@ -151,9 +153,8 @@ func main() {
 	}
 
 	// 启动服务器
-	addr := fmt.Sprintf("%s:%d", cfg.Server.Server.Host, cfg.Server.Server.Port)
 	server := &http.Server{
-		Addr:           addr,
+		Addr:           serverAddr,
 		Handler:        router,
 		ReadTimeout:    time.Duration(cfg.Server.Server.ReadTimeout) * time.Second,
 		WriteTimeout:   time.Duration(cfg.Server.Server.WriteTimeout) * time.Second,
@@ -162,7 +163,7 @@ func main() {
 
 	// 在新的 goroutine 中启动服务器
 	go func() {
-		log.Printf("🚀 Server starting on %s", addr)
+		log.Printf("🚀 Server starting on %s", serverAddr)
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("❌ Failed to start server: %v", err)
 		}

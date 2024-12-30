@@ -2,12 +2,21 @@ package services
 
 import (
 	"fmt"
+	"log"
+	"os"
 	"sort"
+	"strings"
 	"sync"
 	"sync/atomic"
+	"syscall"
 	"time"
 
-	"github.com/fatih/color"
+	"golang.org/x/term"
+
+	"relayapi/server/internal/middleware/logger"
+
+	ui "github.com/gizak/termui/v3"
+	"github.com/gizak/termui/v3/widgets"
 )
 
 type Stats struct {
@@ -18,11 +27,15 @@ type Stats struct {
 	BytesSent          uint64
 	StartTime          time.Time
 	errorStats         sync.Map // 用于存储每个错误状态码的计数
+	Version            string   // 版本号
+	ServerAddr         string   // 服务器地址
 }
 
-func NewStats() *Stats {
+func NewStats(version, serverAddr string) *Stats {
 	return &Stats{
-		StartTime: time.Now(),
+		StartTime:  time.Now(),
+		Version:    version,
+		ServerAddr: serverAddr,
 	}
 }
 
@@ -117,120 +130,244 @@ func formatBytes(bytes uint64) string {
 
 // StartConsoleDisplay 开始在控制台显示实时统计信息
 func (s *Stats) StartConsoleDisplay(stopChan chan struct{}) {
-	// 创建颜色输出
-	titleColor := color.New(color.FgHiCyan, color.Bold)
-	labelColor := color.New(color.FgHiYellow)
-	valueColor := color.New(color.FgHiGreen)
-	errorColor := color.New(color.FgHiRed)
-	successColor := color.New(color.FgHiGreen)
-	warningColor := color.New(color.FgHiYellow)
+	var uiActive bool = true
+	var uiQuit bool = false
 
-	// 创建进度条字符
-	progressChars := []string{"⣾", "⣽", "⣻", "⢿", "⡿", "⣟", "⣯", "⣷"}
-	progressIdx := 0
+	// 保存原始终端设置
+	oldState, err := term.MakeRaw(int(syscall.Stdin))
+	if err != nil {
+		log.Printf("无法设置终端为原始模式: %v", err)
+		return
+	}
+	defer term.Restore(int(syscall.Stdin), oldState)
 
+	// 创建一个函数来启动 UI
+	startUI := func() error {
+		if err := ui.Init(); err != nil {
+			log.Printf("failed to initialize termui: %v", err)
+			return err
+		}
+		uiActive = true
+		return nil
+	}
+
+	// 初始启动 UI
+	if err := startUI(); err != nil {
+		return
+	}
+	defer ui.Close()
+
+	// 创建标题
+	title := widgets.NewParagraph()
+	title.Title = "RelayAPI Server"
+	title.Text = fmt.Sprintf("Version: %s   |   Server: %s", s.Version, s.ServerAddr)
+	title.TextStyle.Fg = ui.ColorCyan
+	title.BorderStyle.Fg = ui.ColorCyan
+	title.TitleStyle.Fg = ui.ColorCyan
+
+	// 创建基本统计信息区域
+	basicStats := widgets.NewParagraph()
+	basicStats.Title = "Basic Statistics"
+	basicStats.BorderStyle.Fg = ui.ColorYellow
+
+	// 创建请求统计图表
+	requestsPlot := widgets.NewPlot()
+	requestsPlot.Title = "Requests Per Second"
+	requestsPlot.Data = make([][]float64, 1)
+	requestsPlot.Data[0] = []float64{0, 0} // 初始化为两个零点
+	requestsPlot.LineColors = []ui.Color{ui.ColorYellow}
+	requestsPlot.BorderStyle.Fg = ui.ColorYellow
+	requestsPlot.AxesColor = ui.ColorWhite
+	requestsPlot.DrawDirection = widgets.DrawLeft
+	requestsPlot.MaxVal = 100
+
+	// 创建错误统计区域
+	errorStats := widgets.NewParagraph()
+	errorStats.Title = "Error Statistics"
+	errorStats.BorderStyle.Fg = ui.ColorRed
+
+	// 创建日志区域
+	logView := widgets.NewParagraph()
+	logView.Title = "Recent Logs"
+	logView.BorderStyle.Fg = ui.ColorBlue
+
+	// 初始化计数器和数据切片
+	lastTotal := atomic.LoadUint64(&s.TotalRequests)
+	tpsData := []float64{0, 0} // 初始化为两个零点
+
+	// 创建事件处理通道
+	uiEvents := ui.PollEvents()
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
 
-	// 清除控制台并隐藏光标
-	fmt.Print("\033[2J\033[?25l")
-	defer fmt.Print("\033[?25h") // 恢复光标
-
-	for {
-		select {
-		case <-stopChan:
+	// 设置布局函数
+	updateUI := func() {
+		if !uiActive {
 			return
-		case <-ticker.C:
-			// 获取当前统计数据
-			uptime := s.GetUptime()
-			totalReqs := atomic.LoadUint64(&s.TotalRequests)
-			successReqs := atomic.LoadUint64(&s.SuccessfulRequests)
-			failedReqs := atomic.LoadUint64(&s.FailedRequests)
-			bytesRecv := atomic.LoadUint64(&s.BytesReceived)
-			bytesSent := atomic.LoadUint64(&s.BytesSent)
-			tps := float64(totalReqs) / uptime.Seconds()
+		}
+		// 获取终端大小
+		width, height := ui.TerminalDimensions()
 
-			// 移动光标到顶部
-			fmt.Print("\033[H")
+		// 设置各个组件的位置和大小
+		title.SetRect(0, 0, width, 3)
+		basicStats.SetRect(0, 3, width/2, height/2)
+		requestsPlot.SetRect(width/2, 3, width, height/2)
+		errorStats.SetRect(0, height/2, width/2, height-3)
+		logView.SetRect(width/2, height/2, width, height-3)
 
-			// 显示标题
-			titleColor.Printf("\n  %s RelayAPI Server Statistics %s\n\n", progressChars[progressIdx], progressChars[progressIdx])
-			progressIdx = (progressIdx + 1) % len(progressChars)
+		// 更新统计数据
+		uptime := s.GetUptime()
+		totalReqs := atomic.LoadUint64(&s.TotalRequests)
+		successReqs := atomic.LoadUint64(&s.SuccessfulRequests)
+		failedReqs := atomic.LoadUint64(&s.FailedRequests)
+		bytesRecv := atomic.LoadUint64(&s.BytesReceived)
+		bytesSent := atomic.LoadUint64(&s.BytesSent)
 
-			// 显示运行时间
-			labelColor.Print("  ⏱️  Uptime: ")
-			valueColor.Printf("%s\n", uptime.Round(time.Second))
+		// 计算 TPS
+		currentTPS := float64(totalReqs-lastTotal) / 1.0
+		lastTotal = totalReqs
 
-			// 显示请求统计
-			labelColor.Print("  🔄 Total Requests: ")
-			valueColor.Printf("%d\n", totalReqs)
-
-			// 显示成功/失败请求
-			labelColor.Print("  ✅ Successful: ")
-			successColor.Printf("%d", successReqs)
-			labelColor.Print("  ❌ Failed: ")
-			errorColor.Printf("%d\n", failedReqs)
-
-			// 显示 TPS
-			labelColor.Print("  ⚡ TPS: ")
-			valueColor.Printf("%.2f\n", tps)
-
-			// 显示流量统计
-			labelColor.Print("  📥 Bytes Received: ")
-			valueColor.Printf("%s", formatBytes(bytesRecv))
-			labelColor.Print("  📤 Bytes Sent: ")
-			valueColor.Printf("%s\n", formatBytes(bytesSent))
-
-			// 显示成功率
-			successRate := float64(0)
-			if totalReqs > 0 {
-				successRate = float64(successReqs) / float64(totalReqs) * 100
+		// 更新图表数据，确保至少有两个点
+		if len(tpsData) < 2 {
+			tpsData = []float64{0, currentTPS}
+		} else {
+			tpsData = append(tpsData, currentTPS)
+			if len(tpsData) > 60 {
+				tpsData = tpsData[1:]
 			}
-			labelColor.Print("  📊 Success Rate: ")
-			if successRate >= 90 {
-				successColor.Printf("%.2f%%\n", successRate)
-			} else if successRate >= 70 {
-				valueColor.Printf("%.2f%%\n", successRate)
-			} else {
-				errorColor.Printf("%.2f%%\n", successRate)
+		}
+
+		// 动态调整最大值
+		maxTPS := currentTPS
+		for _, v := range tpsData {
+			if v > maxTPS {
+				maxTPS = v
 			}
+		}
+		requestsPlot.MaxVal = maxTPS * 1.2 // 设置为最大值的 1.2 倍，留出一些空间
+		if requestsPlot.MaxVal < 10 {      // 设置最小值，避免图表太扁
+			requestsPlot.MaxVal = 10
+		}
 
-			// 显示错误统计
-			if failedReqs > 0 {
-				labelColor.Print("\n  🚫 Error Statistics:\n")
-				errorStats := s.GetErrorStats()
+		requestsPlot.Data[0] = tpsData
+		requestsPlot.Title = fmt.Sprintf("Requests Per Second (Current: %.2f)", currentTPS)
 
-				// 对状态码进行排序
-				var codes []int
-				for code := range errorStats {
-					codes = append(codes, code)
+		// 计算成功率
+		successRate := float64(0)
+		if totalReqs > 0 {
+			successRate = float64(successReqs) / float64(totalReqs) * 100
+		}
+
+		// 更新基本统计信息
+		basicStats.Text = fmt.Sprintf(
+			"⏱️  Uptime: %s\n"+
+				"🔄 Total Requests: %d\n"+
+				"✅ Successful: %d\n"+
+				"❌ Failed: %d\n"+
+				"📥 Bytes Received: %s\n"+
+				"📤 Bytes Sent: %s\n"+
+				"📊 Success Rate: %.2f%%",
+			uptime.Round(time.Second),
+			totalReqs,
+			successReqs,
+			failedReqs,
+			formatBytes(bytesRecv),
+			formatBytes(bytesSent),
+			successRate,
+		)
+
+		// 更新错误统计信息
+		if failedReqs > 0 {
+			var errorText strings.Builder
+			errStats := s.GetErrorStats()
+			var codes []int
+			for code := range errStats {
+				codes = append(codes, code)
+			}
+			sort.Ints(codes)
+
+			for _, code := range codes {
+				count := errStats[code]
+				percentage := float64(count) / float64(failedReqs) * 100
+				errorText.WriteString(fmt.Sprintf("%d %s\nCount: %d (%.2f%%)\n\n",
+					code,
+					getStatusCodeDesc(code),
+					count,
+					percentage,
+				))
+			}
+			errorStats.Text = errorText.String()
+		} else {
+			errorStats.Text = "No errors reported"
+		}
+
+		// 更新日志视图
+		logView.Text = logger.GetRecentLogs()
+
+		// 渲染所有组件
+		ui.Render(title, basicStats, requestsPlot, errorStats, logView)
+	}
+
+	// 主事件循环
+	logUpdateChan := logger.GetLogUpdateChan()
+
+	// 创建按键读取缓冲区
+	buf := make([]byte, 1)
+
+	for !uiQuit {
+		if uiActive {
+			select {
+			case e := <-uiEvents:
+				switch e.ID {
+				case "q", "<C-q>":
+					// 切换到普通模式
+					ui.Close()
+					uiActive = false
+					fmt.Println("\n“Press ‘q’ or ‘Ctrl+q’ to switch to UI mode, or ‘Ctrl+C’ to exit.”")
+				case "<C-c>":
+					uiQuit = true
+				case "<Resize>":
+					updateUI()
 				}
-				sort.Ints(codes)
-
-				for _, code := range codes {
-					count := errorStats[code]
-					percentage := float64(count) / float64(failedReqs) * 100
-
-					// 根据错误类型选择颜色
-					var statusColor *color.Color
-					switch {
-					case code >= 500:
-						statusColor = errorColor // 服务器错误用红色
-					case code >= 400:
-						statusColor = warningColor // 客户端错误用黄色
-					default:
-						statusColor = valueColor
+			case <-ticker.C:
+				updateUI()
+			case <-logUpdateChan:
+				updateUI()
+			case <-stopChan:
+				return
+			}
+		} else {
+			// 普通模式下的事件处理
+			select {
+			case <-ticker.C:
+				// 在普通模式下打印基本统计信息
+				uptime := s.GetUptime()
+				totalReqs := atomic.LoadUint64(&s.TotalRequests)
+				successReqs := atomic.LoadUint64(&s.SuccessfulRequests)
+				failedReqs := atomic.LoadUint64(&s.FailedRequests)
+				fmt.Printf("\rUptime: %s | Requests: %d | Success: %d | Failed: %d | TPS: %.2f",
+					uptime.Round(time.Second),
+					totalReqs,
+					successReqs,
+					failedReqs,
+					float64(totalReqs)/uptime.Seconds())
+			case <-stopChan:
+				return
+			default:
+				// 检查键盘输入
+				if n, err := os.Stdin.Read(buf); err == nil && n == 1 {
+					switch buf[0] {
+					case 'q':
+						// 切换回 UI 模式
+						fmt.Print("\n") // 在切换回 UI 模式前换行，保持输出整洁
+						if err := startUI(); err == nil {
+							updateUI()
+						}
+					case 3: // Ctrl+C
+						uiQuit = true
 					}
-
-					labelColor.Printf("    %d ", code)
-					statusColor.Printf("%-20s", getStatusCodeDesc(code))
-					statusColor.Printf("Count: %-6d", count)
-					statusColor.Printf("(%.2f%%)\n", percentage)
 				}
 			}
-
-			// 添加分隔线
-			fmt.Println("\n  " + color.HiBlackString(string(repeat('─', 50))))
 		}
 	}
 }
