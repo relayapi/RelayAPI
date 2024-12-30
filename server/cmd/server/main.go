@@ -20,7 +20,7 @@ import (
 func main() {
 	// 解析命令行参数
 	serverConfig := flag.String("config", "config.json", "服务器配置文件路径")
-	clientConfig := flag.String("rai", "", "客户端配置文件路径 (.rai)")
+	clientConfig := flag.String("rai", "", "客户端配置文件路径或目录 (.rai)")
 	flag.Parse()
 
 	// 加载配置
@@ -58,7 +58,7 @@ func main() {
 		c.JSON(http.StatusOK, gin.H{
 			"status":  "ok",
 			"time":    time.Now().Format(time.RFC3339),
-			"version": cfg.Client.Version,
+			"version": "1.0.0",
 		})
 	})
 
@@ -76,7 +76,7 @@ func main() {
 		api.Use(middleware.RateLimit(globalLimiter, ipLimiter))
 
 		// 添加认证中间件
-		api.Use(middleware.TokenAuth(&cfg.Client))
+		api.Use(middleware.TokenAuth(cfg))
 
 		// 所有 API 请求通过统一入口处理
 		api.Any("/*path", apiHandler.HandleRequest)
@@ -92,7 +92,7 @@ func main() {
 		MaxHeaderBytes: cfg.Server.Server.MaxHeaderBytes,
 	}
 
-	log.Printf("Server version %s starting on %s", cfg.Client.Version, addr)
+	log.Printf("Server starting on %s", addr)
 	if err := server.ListenAndServe(); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}

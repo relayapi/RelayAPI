@@ -21,12 +21,9 @@ func splitStringByFirstSlash(input string) (string, string) {
 }
 
 // TokenAuth 验证访问令牌的中间件
-func TokenAuth(cfg *config.ClientConfig) gin.HandlerFunc {
-	// 创建加密器
-	encryptor, err := crypto.NewEncryptor(cfg)
-	if err != nil {
-		panic(err)
-	}
+func TokenAuth(cfg *config.Config) gin.HandlerFunc {
+	// 创建加密器映射
+	encryptors := make(map[string]crypto.Encryptor)
 
 	return func(c *gin.Context) {
 		// 从 URL 参数中获取令牌
@@ -45,6 +42,42 @@ func TokenAuth(cfg *config.ClientConfig) gin.HandlerFunc {
 			return
 		}
 
+		// 获取配置 hash
+		raiHash := c.Query("rai_hash")
+		if raiHash == "" {
+			// 如果没有指定 hash，使用第一个可用的配置
+			for hash := range cfg.Clients {
+				raiHash = hash
+				break
+			}
+		}
+
+		clientCfg, ok := cfg.GetClientConfig(raiHash)
+		if !ok {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"error":   "Invalid configuration hash",
+				"message": "The provided configuration hash is not valid",
+			})
+			c.Abort()
+			return
+		}
+
+		// 获取或创建加密器
+		encryptor, ok := encryptors[raiHash]
+		if !ok {
+			var err error
+			encryptor, err = crypto.NewEncryptor(&clientCfg)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{
+					"error":   "Encryptor initialization failed",
+					"message": err.Error(),
+				})
+				c.Abort()
+				return
+			}
+			encryptors[raiHash] = encryptor
+		}
+
 		// 清理令牌字符串
 		encryptedToken = strings.TrimSpace(encryptedToken)
 
@@ -53,17 +86,11 @@ func TokenAuth(cfg *config.ClientConfig) gin.HandlerFunc {
 			encryptedToken += strings.Repeat("=", 4-padding)
 		}
 
-		// //打印调试信息
-		// fmt.Printf("Token length: %d\n", len(encryptedToken))
-		// fmt.Printf("First 10 bytes: %v\n", []byte(encryptedToken[:10]))
-		// fmt.Printf("Full token: %s\n", encryptedToken)
-
 		encryptedToken, extPath := splitStringByFirstSlash(encryptedToken)
 		if extPath != "" {
 			c.Set("ext_path", strings.TrimRight(extPath, "="))
 		}
-		// fmt.Printf("extPath: %s\n", extPath)
-		// fmt.Printf("encryptedToken: %s\n", encryptedToken)
+
 		// Base64 URL 安全解码
 		tokenBytes, err := base64.URLEncoding.DecodeString(encryptedToken)
 		if err != nil {
@@ -101,7 +128,6 @@ func TokenAuth(cfg *config.ClientConfig) gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-		// fmt.Printf("token: %+v\n", token)
 
 		// 验证令牌有效性
 		if !token.IsValid() {
@@ -121,6 +147,7 @@ func TokenAuth(cfg *config.ClientConfig) gin.HandlerFunc {
 		// 将令牌和 API Key 存储在上下文中
 		c.Set("token", token)
 		c.Set("api_key", token.APIKey)
+		c.Set("rai_hash", raiHash)
 
 		c.Next()
 	}
