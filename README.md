@@ -54,9 +54,16 @@ sequenceDiagram
 
 ### Installation
 
-#### Quick installation of RelayAPI Server
+Using script
 ```bash
 curl -fsSL https://raw.githubusercontent.com/relayapi/RelayAPI/refs/heads/main/get_relayapi.sh -o get_relayapi.sh && chmod +x get_relayapi.sh && ./get_relayapi.sh
+```
+OR git clone
+```bash
+git clone https://github.com/relayapi/RelayAPI.git
+cd RelayAPI/server
+go build -o relayapi-server cmd/server/main.go
+./relayapi-server -rai ./default.rai
 ```
 
 ```bash
