@@ -144,25 +144,51 @@ func (s *Stats) StartConsoleDisplay(stopChan chan struct{}) {
 
 	// 先显示 Logo
 	logo := `
-    ____       __          ___    ____  ____
-   / __ \___  / /___ ___ _/   |  / __ \/  _/
-  / /_/ / _ \/ / __ '__ \/ /| | / /_/ // /  
- / _, _/  __/ / / / / / / ___ |/ ____// /   
-/_/ |_|\___/_/_/ /_/ /_/_/  |_/_/   /___/   
-                                            v` + s.Version + "\n"
+    ██████╗ ███████╗██╗      █████╗ ██╗   ██╗
+    ██╔══██╗██╔════╝██║     ██╔══██╗╚██╗ ██╔╝
+    ██████╔╝█████╗  ██║     ███████║ ╚████╔╝ 
+    ██╔══██╗██╔══╝  ██║     ██╔══██║  ╚██╔╝  
+    ██║  ██║███████╗███████╗██║  ██║   ██║   
+    ╚═╝  ╚═╝╚══════╝╚══════╝╚═╝  ╚═╝   ╚═╝   
+     █████╗ ██████╗ ██╗
+    ██╔══██╗██╔══██╗██║
+    ███████║██████╔╝██║
+    ██╔══██║██╔═══╝ ██║
+    ██║  ██║██║     ██║
+    ╚═╝  ╚═╝╚═╝     ╚═╝ v` + s.Version + "\n"
 
 	// 使用渐变色一次性显示 Logo
 	logoLines := strings.Split(logo, "\n")
 	for _, line := range logoLines {
 		if len(strings.TrimSpace(line)) > 0 {
-			colorIdx := 0
-			for _, char := range line {
-				fmt.Print(gradientColors[colorIdx%len(gradientColors)], string(char))
-				colorIdx++
+			// 为每一行应用双重渐变色
+			chars := []rune(line)
+			midPoint := len(chars) / 2
+
+			// 前半部分使用一组渐变色
+			for i := 0; i < midPoint; i++ {
+				color := gradientColors[i%(len(gradientColors))]
+				fmt.Print(color, string(chars[i]))
+			}
+
+			// 后半部分使用反向渐变色
+			for i := midPoint; i < len(chars); i++ {
+				color := gradientColors[(len(chars)-i)%(len(gradientColors))]
+				fmt.Print(color, string(chars[i]))
 			}
 		}
 		fmt.Print("\033[0m\n")
 	}
+
+	// 添加一个分隔线
+	fmt.Print("\n")
+	divider := "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+	for _, char := range divider {
+		colorIdx := 0
+		fmt.Print(gradientColors[colorIdx%len(gradientColors)], string(char))
+		colorIdx++
+	}
+	fmt.Print("\033[0m\n")
 
 	// 等待一小段时间让用户欣赏 Logo
 	time.Sleep(300 * time.Millisecond)

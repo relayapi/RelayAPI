@@ -64,13 +64,13 @@ func main() {
 	if err != nil {
 		log.Fatalf("\033[31m❌ Failed to load config: %v\033[0m", err)
 	}
-	log.Println("\033[32m✅ Configuration loaded successfully\033[0m")
+	// log.Println("\033[32m✅ Configuration loaded successfully\033[0m")
 
 	// 验证配置
 	if err := config.ValidateConfig(cfg); err != nil {
 		log.Fatalf("\033[31m❌ Invalid config: %v\033[0m", err)
 	}
-	log.Println("\033[32m✅ Configuration validated\033[0m")
+	// log.Println("\033[32m✅ Configuration validated\033[0m")
 
 	// 设置 Gin 模式
 	if cfg.Server.Server.Debug {
@@ -94,19 +94,19 @@ func main() {
 	log.Println("\033[36m🔧 Initializing middleware...\033[0m")
 	// 添加路径规范化中间件
 	router.Use(middleware.PathNormalizationMiddleware())
-	log.Println("\033[32m✅ Path normalization middleware initialized\033[0m")
+	// log.Println("\033[32m✅ Path normalization middleware initialized\033[0m")
 
 	// 添加日志中间件
 	router.Use(logger.Middleware(cfg))
-	log.Println("\033[32m✅ Logger middleware initialized\033[0m")
+	// log.Println("\033[32m✅ Logger middleware initialized\033[0m")
 
 	// 创建代理服务
 	proxyService := services.NewProxyService()
-	log.Println("\033[32m✅ Proxy service initialized\033[0m")
+	// log.Println("\033[32m✅ Proxy service initialized\033[0m")
 
 	// 创建 API 处理器
 	apiHandler := handlers.NewAPIHandler(proxyService)
-	log.Println("\033[32m✅ API handler initialized\033[0m")
+	// log.Println("\033[32m✅ API handler initialized\033[0m")
 
 	// 健康检查路由
 	router.GET("/health", func(c *gin.Context) {
@@ -132,14 +132,14 @@ func main() {
 	// API 路由组
 	api := router.Group("/relayapi")
 	{
-		log.Println("\033[36m🔧 Configuring rate limiters...\033[0m")
+		// log.Println("\033[36m🔧 Configuring rate limiters...\033[0m")
 		// 创建全局限流器和 IP 限流器
 		globalLimiter := rate.NewLimiter(rate.Limit(cfg.Server.RateLimit.RequestsPerSecond), cfg.Server.RateLimit.Burst)
 		ipLimiter := middleware.NewIPRateLimiter(
 			rate.Limit(cfg.Server.RateLimit.IPLimit.RequestsPerSecond),
 			cfg.Server.RateLimit.IPLimit.Burst,
 		)
-		log.Println("\033[32m✅ Rate limiters configured\033[0m")
+		// log.Println("\033[32m✅ Rate limiters configured\033[0m")
 
 		// 添加统计中间件
 		api.Use(func(c *gin.Context) {
@@ -159,11 +159,11 @@ func main() {
 
 		// 添加限流中间件（在认证之前）
 		api.Use(middleware.RateLimit(globalLimiter, ipLimiter))
-		log.Println("\033[32m✅ Rate limit middleware initialized\033[0m")
+		// log.Println("\033[32m✅ Rate limit middleware initialized\033[0m")
 
 		// 添加认证中间件
 		api.Use(middleware.TokenAuth(cfg))
-		log.Println("\033[32m✅ Authentication middleware initialized\033[0m")
+		// log.Println("\033[32m✅ Authentication middleware initialized\033[0m")
 
 		// 所有 API 请求通过统一入口处理
 		api.Any("/*path", apiHandler.HandleRequest)
