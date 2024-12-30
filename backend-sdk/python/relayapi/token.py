@@ -1,5 +1,6 @@
 import json
 import base64
+import hashlib
 from datetime import datetime, timedelta, timezone
 from typing import Dict, Any, Optional, Union
 
@@ -32,6 +33,23 @@ class TokenGenerator:
         # 解码 AES 密钥和 IV 种子
         self.key = bytes.fromhex(self.crypto_config['aes_key'])
         self.iv_seed = self.crypto_config['aes_iv_seed'].encode()
+
+        # 生成配置哈希
+        self.hash = self._generate_config_hash()
+
+    def _generate_config_hash(self) -> str:
+        """
+        生成配置哈希
+        
+        Returns:
+            str: 配置哈希值
+        """
+        data = (
+            self.crypto_config['method'] +
+            self.crypto_config['aes_key'] +
+            self.crypto_config['aes_iv_seed']
+        ).encode()
+        return hashlib.sha256(data).hexdigest()
 
     def generate_iv(self) -> bytes:
         """

@@ -3,44 +3,50 @@
 import os
 from relayapi import RelayAPIClient
 
-def main():
-    # 创建客户端实例
-    client = RelayAPIClient("../../../default.rai")
-    
-    # 创建访问令牌
-    api_key = os.getenv("API_KEY", "sk-573af3eca24f492a83d5e64894ed91f5")
-    token = client.create_token(
-        api_key=api_key,
-        max_calls=100,
-        expire_days=1,
-        provider="dashscope"  # 或 "openai"
-    )
-    
-    # 检查服务器状态
-    print("\n检查服务器状态...")
-    try:
-        status = client.health_check()
-        print(f"服务器状态: {status}")
-    except Exception as e:
-        print(f"健康检查失败: {e}")
-        return
-    
-    # 发送聊天请求
-    print("\n发送聊天请求...")
-    messages = [
-        {"role": "user", "content": "你好！请介绍一下自己。"}
-    ]
-    
-    try:
-        response = client.chat_completions(
-            token=token,
-            messages=messages,
-            model="qwen-vl-max"
-        )
-        print("\n助手回复:")
-        print(response["choices"][0]["message"]["content"])
-    except Exception as e:
-        print(f"请求失败: {e}")
+# 创建客户端实例
+client = RelayAPIClient("../../../server/default.rai")
 
-if __name__ == "__main__":
-    main()
+# 创建令牌
+token = client.create_token(
+    api_key=os.getenv("API_KEY", "your-api-key"),
+    max_calls=100,
+    expire_days=1,
+    provider="openai"
+)
+
+# 生成 API URL
+base_url = client.generate_api_url_with_token(token)
+print("Base URL:", base_url)
+
+# 使用 OpenAI 客户端
+from openai import OpenAI
+
+openai_client = OpenAI(
+    base_url=base_url,
+    api_key="not-needed"  # API key 已包含在 token 中
+)
+
+# 发送聊天请求
+response = openai_client.chat.completions.create(
+    model="gpt-3.5-turbo",
+    messages=[
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": "What is the capital of France?"}
+    ]
+)
+
+print("\nChat Response:")
+print(response.choices[0].message.content)
+
+# 使用 RelayAPI 客户端直接发送请求
+response = client.chat_completions(
+    token=token,
+    messages=[
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": "What is the capital of France?"}
+    ],
+    model="gpt-3.5-turbo"
+)
+
+print("\nDirect API Response:")
+print(response['choices'][0]['message']['content'])

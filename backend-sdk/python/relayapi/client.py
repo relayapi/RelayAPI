@@ -69,7 +69,7 @@ class RelayAPIClient:
         Returns:
             Dict[str, Any]: API 响应
         """
-        url = self.token_generator.get_server_url("/chat/completions")
+        url = self.generate_api_url_with_token(token, 'chat_completions')
         data = {
             "model": model,
             "messages": messages,
@@ -77,7 +77,7 @@ class RelayAPIClient:
         }
         
         response = requests.post(
-            f"{url}?token={token.strip()}",
+            url,
             headers=self.headers,
             json=data
         )
@@ -105,7 +105,7 @@ class RelayAPIClient:
         Returns:
             Dict[str, Any]: API 响应
         """
-        url = self.token_generator.get_server_url("/images/generations")
+        url = self.generate_api_url_with_token(token, 'images_generations')
         data = {
             "prompt": prompt,
             "n": n,
@@ -114,7 +114,7 @@ class RelayAPIClient:
         }
         
         response = requests.post(
-            f"{url}?token={token.strip()}",
+            url,
             headers=self.headers,
             json=data
         )
@@ -140,7 +140,7 @@ class RelayAPIClient:
         Returns:
             Dict[str, Any]: API 响应
         """
-        url = self.token_generator.get_server_url("/embeddings")
+        url = self.generate_api_url_with_token(token, 'embeddings')
         data = {
             "model": model,
             "input": input,
@@ -148,7 +148,7 @@ class RelayAPIClient:
         }
         
         response = requests.post(
-            f"{url}?token={token.strip()}",
+            url,
             headers=self.headers,
             json=data
         )
@@ -164,18 +164,17 @@ class RelayAPIClient:
         """
         url = self.token_generator.get_server_url("")
         url = f"{url}/health"
-        print(url)
         response = requests.get(url)
         response.raise_for_status()
         return response.json()
 
-    def generate_api_url_with_token(self, token: str, api_type: str) -> str:
+    def generate_api_url_with_token(self, token: str, api_type: str = '') -> str:
         """
         根据令牌和 API 类型生成完整的 API URL
         
         Args:
             token: 加密的访问令牌
-            api_type: API 类型 (chat_completions/images_generations/embeddings)
+            api_type: API 类型 (chat_completions/images_generations/embeddings)，默认为空
             
         Returns:
             str: 完整的 API URL，包含令牌参数
@@ -186,31 +185,29 @@ class RelayAPIClient:
             'embeddings': '/embeddings'
         }
         
-        if api_type not in api_paths:
-            raise ValueError(f"不支持的 API 类型: {api_type}")
-            
-        base_url = self.token_generator.get_server_url(api_paths[api_type])
-        return f"{base_url}?token={token.strip()}"
+        path = api_paths.get(api_type, '')
+        base_url = self.token_generator.get_server_url(path)
+        return f"{base_url}?token={token.strip()}&rai_hash={self.token_generator.hash}"
 
     def generate_api_url(
         self,
         api_key: str,
-        api_type: str,
         max_calls: int = 100,
         expire_days: int = 1,
         provider: str = "dashscope",
-        ext_info: str = ""
+        ext_info: str = "",
+        api_type: str = ""
     ) -> str:
         """
         一步生成带有新令牌的 API URL
         
         Args:
             api_key: API 密钥
-            api_type: API 类��� (chat_completions/images_generations/embeddings)
             max_calls: 最大调用次数
             expire_days: 过期天数
             provider: API 提供者 (openai/dashscope)
             ext_info: 扩展信息
+            api_type: API 类型，默认为空
             
         Returns:
             str: 完整的 API URL，包含新生成的令牌参数

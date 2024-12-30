@@ -1,27 +1,21 @@
 # RelayAPI Python SDK
 
-RelayAPI Python SDK 是一个用于访问 RelayAPI Server 的客户端库。它提供了简单的接口来创建访问令牌和调用各种 API 服务。
+RelayAPI Python SDK 是一个用于与 RelayAPI 服务器进行交互的客户端库。它提供了简单的接口来生成 API URL、创建令牌，以及发送各种 API 请求。
 
 ## 安装
 
-```bash
-# 从源代码安装
-git clone https://github.com/yourusername/relayapi.git
-cd relayapi/backend-sdk/python
-pip install -e .
+使用 pip 安装：
 
-# 或者直接使用 pip 安装（即将支持）
-pip install relayapi
+```bash
+pip install relayapi-sdk
 ```
 
 ## 配置
 
-SDK 需要一个 `.rai` 配置文件来初始化。默认会在当前目录查找 `default.rai`，也可以指定配置文件路径。
+SDK 需要一个配置对象来初始化。你可以从配置文件（`.rai`）加载配置，或直接传入配置对象。配置格式示例：
 
-配置文件示例：
-
-```json
-{
+```python
+config = {
     "version": "1.0.0",
     "server": {
         "host": "http://localhost",
@@ -30,198 +24,211 @@ SDK 需要一个 `.rai` 配置文件来初始化。默认会在当前目录查�
     },
     "crypto": {
         "method": "aes",
-        "aes_key": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
-        "aes_iv_seed": "fedcba9876543210"
+        "aes_key": "your-aes-key",
+        "aes_iv_seed": "your-iv-seed"
     }
 }
 ```
 
-## 快速开始
+## 使用示例
+
+### 基本用法
 
 ```python
 from relayapi import RelayAPIClient
+from openai import OpenAI
 
-# 方式1：使用配置文件初始化
-client = RelayAPIClient("default.rai")
-
-# 方式2：使用配置字典初始化
-config = {
-    "version": "1.0.0",
-    "server": {
-        "host": "http://localhost",
-        "port": 8080,
-        "base_path": "/relayapi/"
-    },
-    "crypto": {
-        "method": "aes",
-        "aes_key": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
-        "aes_iv_seed": "fedcba9876543210"
-    }
-}
+# 创建客户端实例（使用配置对象）
 client = RelayAPIClient(config)
 
-# 生成 API URL
-url = client.generate_api_url(
-    api_key="your-api-key",
-    api_type="chat_completions", 
-    max_calls=100,
-    expire_days=1,
-    provider="dashscope"  # 或 "openai")
-
-# 创建访问令牌
+# 创建令牌
 token = client.create_token(
     api_key="your-api-key",
     max_calls=100,
     expire_days=1,
-    provider="dashscope"  # 或 "openai"
+    provider="openai"
 )
 
-# 发送聊天请求
-messages = [
-    {"role": "user", "content": "你好！"}
-]
+# 生成 API URL
+base_url = client.generate_api_url_with_token(token)
+print("Base URL:", base_url)
+# 输出示例: http://localhost:8080/relayapi/?token=xxxxx&rai_hash=xxxxx
 
-response = client.chat_completions(
-    token=token,
-    messages=messages,
-    model="qwen-vl-max"
+# 在前端代码中将此 URL 用作 OpenAI API 的基础 URL
+openai_client = OpenAI(
+    base_url=base_url,
+    api_key="not-needed"  # 实际的 API key 已包含在 token 中
 )
-
-print(response["choices"][0]["message"]["content"])
 ```
 
-## API 文档
+### 聊天请求
+
+```python
+response = client.chat_completions(
+    token=token,
+    messages=[
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": "What is the capital of France?"}
+    ],
+    model="gpt-3.5-turbo"
+)
+```
+
+### 图像生成
+
+```python
+response = client.images_generations(
+    token=token,
+    prompt="A beautiful sunset over Paris",
+    model="dall-e-3",
+    size="1024x1024",
+    quality="standard",
+    n=1
+)
+```
+
+### 嵌入向量生成
+
+```python
+response = client.embeddings(
+    token=token,
+    input="The quick brown fox jumps over the lazy dog",
+    model="text-embedding-ada-002"
+)
+```
+
+### 健康检查
+
+```python
+status = client.health_check()
+```
+
+### URL 生成
+
+`generate_api_url_with_token` 方法用于生成包含令牌和哈希参数的完整 API URL：
+
+```python
+# 生成基础 URL（不指定 API 类型）
+base_url = client.generate_api_url_with_token(token)
+
+# 生成特定 API 的 URL
+chat_url = client.generate_api_url_with_token(token, 'chat_completions')
+image_url = client.generate_api_url_with_token(token, 'images_generations')
+embedding_url = client.generate_api_url_with_token(token, 'embeddings')
+```
+
+参数：
+- `token` (str)：加密的令牌字符串
+- `api_type` (str, 可选)：API 类型，默认为空字符串
+
+该方法会自动将令牌和配置哈希作为 URL 参数添加。
+
+## API 参考
 
 ### RelayAPIClient
 
-主要的客户端类，用于创建令牌和调用 API。
+#### 构造函数
 
-#### 初始化
-
-客户端支持两种初始化方式：
-
-1. 使用配置文件初始化
 ```python
-client = RelayAPIClient(config_path: str = "default.rai")
+RelayAPIClient(config: Union[str, Dict[str, Any]] = "default.rai")
 ```
 
-2. 使用配置字典初始化
-```python
-config = {
-    "version": "1.0.0",
-    "server": {
-        "host": "http://localhost",  # 服务器地址
-        "port": 8080,                # 服务器端口
-        "base_path": "/relayapi/"    # API 基础路径
-    },
-    "crypto": {
-        "method": "aes",             # 加密方式（目前仅支持 aes）
-        "aes_key": "hex_encoded_key",# 32字节的16进制编码密钥
-        "aes_iv_seed": "iv_seed"     # IV种子（用于生成初始化向量）
-    }
-}
-client = RelayAPIClient(config)
-```
+- `config`: 配置文件路径（字符串）或配置对象（字典）
 
 #### 方法
 
+##### create_token
 
-0. 一步生成 API URL（包含令牌创建）
+创建并加密访问令牌。
+
 ```python
-url = client.generate_api_url(
-    api_key: str,                # API 密钥
-    api_type: str,               # API 类型：chat_completions/images_generations/embeddings
-    max_calls: int = 100,        # 最大调用次数
-    expire_days: int = 1,        # 过期天数
-    provider: str = "dashscope", # API 提供者
-    ext_info: str = ""          # 扩展信息
+create_token(
+    api_key: str,
+    max_calls: int = 100,
+    expire_days: int = 1,
+    provider: str = "dashscope",
+    ext_info: str = ""
 ) -> str
 ```
 
-1. 创建令牌
+##### generate_api_url_with_token
+
+生成完整的 API URL。
+
 ```python
-token = client.create_token(
-    api_key: str,                # API 密钥
-    max_calls: int = 100,        # 最大调用次数
-    expire_days: int = 1,        # 过期天数
-    provider: str = "dashscope", # API 提供者
-    ext_info: str = ""          # 扩展信息
+generate_api_url_with_token(
+    token: str,
+    api_type: str = ""
 ) -> str
 ```
 
-2. 聊天补全
+##### chat_completions
+
+发送聊天请求。
+
 ```python
-response = client.chat_completions(
-    token: str,                 # 访问令牌
-    messages: List[Dict],       # 对话消息列表
-    model: str = "qwen-vl-max", # 模型名称
-    **kwargs                    # 其他参数
-) -> Dict
+chat_completions(
+    token: str,
+    messages: List[Dict[str, str]],
+    model: str = "gpt-3.5-turbo",
+    **kwargs: Any
+) -> Dict[str, Any]
 ```
 
-3. 图像生成
+##### images_generations
+
+生成图像。
+
 ```python
-response = client.images_generations(
-    token: str,                # 访问令牌
-    prompt: str,               # 图像描述
-    n: int = 1,               # 生成数量
-    size: str = "1024x1024",  # 图��尺寸
-    **kwargs                  # 其他参数
-) -> Dict
+images_generations(
+    token: str,
+    prompt: str,
+    n: int = 1,
+    size: str = "1024x1024",
+    **kwargs: Any
+) -> Dict[str, Any]
 ```
 
-4. 文本嵌入
+##### embeddings
+
+生成嵌入向量。
+
 ```python
-response = client.embeddings(
-    token: str,                          # 访问令牌
-    input: Union[str, List[str]],        # 输入文本
-    model: str = "text-embedding-ada-002", # 模型名称
-    **kwargs                            # 其他参数
-) -> Dict
+embeddings(
+    token: str,
+    input: Union[str, List[str]],
+    model: str = "text-embedding-ada-002",
+    **kwargs: Any
+) -> Dict[str, Any]
 ```
 
-5. 健康检查
+##### health_check
+
+检查服务器健康状态。
+
 ```python
-status = client.health_check() -> Dict
+health_check() -> Dict[str, Any]
 ```
-
-6. 生成 API URL（带令牌）
-```python
-url = client.generate_api_url_with_token(
-    token: str,                # 访问令牌
-    api_type: str             # API 类型：chat_completions/images_generations/embeddings
-) -> str
-```
-
-
-### TokenGenerator
-
-令牌生成器类，用于创建和加密访问令牌。通常不需要直接使用此类，应该使用 `RelayAPIClient` 的方法。
-
-## 示例
-
-查看 `examples` 目录获取更多示例：
-
-- `chat.py`: 聊天对话示例
-- 更多示例正在添加中...
 
 ## 错误处理
 
-SDK 使用 Python 的异常机制处理错误：
+SDK 中的所有方法都会在发生错误时抛出异常。建议使用 try-except 块来处理可能的错误：
 
-- `requests.exceptions.HTTPError`: API 调用失败
-- `ValueError`: 参数验证失败
-- `FileNotFoundError`: 配置文件不存在
-- `json.JSONDecodeError`: 配置文件格式错误
+```python
+try:
+    response = client.chat_completions(...)
+except Exception as e:
+    print(f"Error: {e}")
+```
 
-## 依赖
+## 示例程序
 
-- Python >= 3.7
-- requests >= 2.25.0
-- pycryptodome >= 3.10.0
+查看 `examples` 目录中的示例程序，了解更多使用方法：
 
+- `chat.py`: 展示了如何使用 SDK 进行聊天
+- `url_generation.py`: 展示了如何生成和使用 API URL
 
 ## 许可证
 
-MIT License
+MIT
 ```
