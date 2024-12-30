@@ -55,9 +55,9 @@ sequenceDiagram
 
 ### 安装
 
+#### RelayAPI Server 快速安装
 ```bash
-# RelayAPI Server 快速安装
-curl -fsSL https://raw.githubusercontent.com/relayapi/RelayAPI/refs/heads/main/get_relayapi.sh | sh
+curl -fsSL https://raw.githubusercontent.com/relayapi/RelayAPI/refs/heads/main/get_relayapi.sh -o get_relayapi.sh && chmod +x get_relayapi.sh && ./get_relayapi.sh
 ```
 
 ```bash

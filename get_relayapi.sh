@@ -20,14 +20,29 @@ esac
 # Version and download URL
 VERSION="v1.0.0"
 DOWNLOAD_URL="https://github.com/relayapi/RelayAPI/releases/download/${VERSION}/relayapi-${OS}-${ARCH}.tar.gz"
+
+# Default paths
+DEFAULT_DOWNLOAD_DIR="$PWD/relayapi"
 INSTALL_DIR="/usr/local/relayapi"
-EXTRACT_DIR="relayapi-${OS}-${ARCH}"
 
-# Create temporary directory
-TMP_DIR=$(mktemp -d)
-cd $TMP_DIR
+# Ask if user wants to change download directory
+echo "📂 Default download directory: $DEFAULT_DOWNLOAD_DIR"
+read -p "Do you want to change the download directory? [y/N] " -n 1 -r
+echo
+DOWNLOAD_DIR="$DEFAULT_DOWNLOAD_DIR"
+if [[ $REPLY =~ ^[Yy]$ ]]; then
+    echo "Enter new download directory:"
+    read -r NEW_DIR
+    if [ ! -z "$NEW_DIR" ]; then
+        DOWNLOAD_DIR="$NEW_DIR"
+    fi
+fi
 
-echo "📦 Downloading RelayAPI..."
+# Create download directory
+mkdir -p "$DOWNLOAD_DIR"
+cd "$DOWNLOAD_DIR" || exit 1
+
+echo "📦 Downloading RelayAPI to $DOWNLOAD_DIR ..."
 if ! curl -fsSL $DOWNLOAD_URL -o relayapi.tar.gz; then
     echo "❌ Download failed"
     exit 1
@@ -35,6 +50,7 @@ fi
 
 echo "📂 Extracting files..."
 tar -xzf relayapi.tar.gz
+EXTRACT_DIR="relayapi-${OS}-${ARCH}"
 echo "✅ Files extracted to: $PWD/$EXTRACT_DIR"
 
 # Ask for installation
@@ -51,12 +67,20 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 
     echo "✅ RelayAPI installed successfully!"
     echo "📝 Config file location: $INSTALL_DIR/config.json"
-    echo "🚀 Start service: relayapi-server"
+    echo "🚀 Start service with: relayapi-server"
 else
     echo "📁 Files are available in: $PWD/$EXTRACT_DIR"
     echo "💡 You can manually install later by copying files to your preferred location"
 fi
 
-# Clean up temporary files
+# Clean up
 cd - > /dev/null
-rm -rf $TMP_DIR 
+if [[ $REPLY =~ ^[Yy]$ ]]; then
+    echo "🧹 Do you want to remove downloaded files? [y/N] "
+    read -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        rm -rf "$DOWNLOAD_DIR"
+        echo "✅ Temporary files cleaned"
+    fi
+fi 
