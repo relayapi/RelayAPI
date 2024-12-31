@@ -42,3 +42,4 @@ backend-sdk/python/build/*
 release/*
 myRelayAPI/*
 step.md
+server/rai/*

@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"encoding/base64"
+	"log"
 	"net/http"
 	"strings"
 
@@ -64,8 +65,8 @@ func TokenAuth(cfg *config.Config) gin.HandlerFunc {
 				break
 			}
 		}
-		// fmt.Println("raiHash", raiHash)
-		// fmt.Println("cfg.Clients", cfg.Clients)
+		log.Println("raiHash", raiHash)
+		log.Println("cfg.Clients", cfg.Clients)
 		clientCfg, ok := cfg.GetClientConfig(raiHash)
 		if !ok {
 			c.JSON(http.StatusUnauthorized, gin.H{

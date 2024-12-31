@@ -157,6 +157,7 @@ func LoadConfig(serverConfigPath string, clientConfigPath string) (*Config, erro
 					log.Printf("Warning: failed to load client config %s: %v", filePath, err)
 					continue
 				}
+				log.Println("load client config:", filePath)
 			}
 		}
 
@@ -181,9 +182,10 @@ func loadClientConfigFile(filePath string, config *Config) error {
 
 	var clientConfig ClientConfig
 	if err := json.Unmarshal(data, &clientConfig); err != nil {
+		log.Println("ERROR: clientConfig  unmarshal error ,filePath: ", filePath)
 		return fmt.Errorf("failed to parse client config file: %v", err)
 	}
-
+	log.Println("clientConfig added :", clientConfig)
 	config.AddClientConfig(clientConfig)
 	return nil
 }
