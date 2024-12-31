@@ -4,7 +4,7 @@
 set -e
 
 # Version number
-VERSION="v1.0.0"
+VERSION="v1.0.1"
 
 # Supported systems and architectures
 SYSTEMS=("linux" "darwin" "windows")
