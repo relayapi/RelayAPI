@@ -131,7 +131,7 @@ func main() {
 
 	// 创建统计服务
 	serverAddr := fmt.Sprintf("%s:%d", cfg.Server.Server.Host, cfg.Server.Server.Port)
-	statsService := services.NewStats(Version, serverAddr)
+	statsService := services.NewStats(Version, serverAddr, cfg.Clients)
 
 	// 启动统计信息显示
 	go statsService.StartConsoleDisplay(stopChan)

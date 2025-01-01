@@ -13,6 +13,7 @@ import (
 
 	"golang.org/x/term"
 
+	"relayapi/server/internal/config"
 	"relayapi/server/internal/middleware/logger"
 
 	ui "github.com/gizak/termui/v3"
@@ -26,16 +27,18 @@ type Stats struct {
 	BytesReceived      uint64
 	BytesSent          uint64
 	StartTime          time.Time
-	errorStats         sync.Map // 用于存储每个错误状态码的计数
-	Version            string   // 版本号
-	ServerAddr         string   // 服务器地址
+	errorStats         sync.Map                       // 用于存储每个错误状态码的计数
+	Version            string                         // 版本号
+	ServerAddr         string                         // 服务器地址
+	Clients            map[string]config.ClientConfig // 客户端配置
 }
 
-func NewStats(version, serverAddr string) *Stats {
+func NewStats(version, serverAddr string, clients map[string]config.ClientConfig) *Stats {
 	return &Stats{
 		StartTime:  time.Now(),
 		Version:    version,
 		ServerAddr: serverAddr,
+		Clients:    clients,
 	}
 }
 
@@ -310,11 +313,36 @@ func (s *Stats) StartConsoleDisplay(stopChan chan struct{}) {
 
 	// 创建标题
 	title := widgets.NewParagraph()
-	title.Title = "RelayAPI Server"
-	title.Text = fmt.Sprintf("Version: %s   |   Server: %s", s.Version, s.ServerAddr)
+	title.Title = fmt.Sprintf("RelayAPI Server (v%s | %s)", s.Version, s.ServerAddr)
+
+	// 添加客户端到列表
+	var clientKeys []string
+	clientDetails := make(map[string]string)
+	var titleText strings.Builder
+	for hash, client := range s.Clients {
+		shortHash := hash[:12] + "..."
+		clientKeys = append(clientKeys, shortHash)
+		// 存储详细信息
+		maskedKey := client.Crypto.AESKey[:8] + "..." + client.Crypto.AESKey[len(client.Crypto.AESKey)-4:]
+		titleText.WriteString(fmt.Sprintf("%s | Key: %s | IV: %s\n", shortHash, maskedKey, client.Crypto.AESIVSeed))
+		clientDetails[shortHash] = fmt.Sprintf("Hash: %s\nKey: %s\nIV: %s", hash, maskedKey, client.Crypto.AESIVSeed)
+	}
+	title.Text = titleText.String()
 	title.TextStyle.Fg = ui.ColorCyan
 	title.BorderStyle.Fg = ui.ColorCyan
 	title.TitleStyle.Fg = ui.ColorCyan
+
+	// 创建详细信息显示区域
+	clientDetail := widgets.NewParagraph()
+	clientDetail.Title = "Client Detail"
+	clientDetail.BorderStyle.Fg = ui.ColorYellow
+
+	// 创建客户端列表
+	clientList := widgets.NewList()
+	clientList.Title = "Clients"
+	clientList.TextStyle = ui.NewStyle(ui.ColorYellow)
+	clientList.WrapText = false
+	clientList.SelectedRowStyle = ui.NewStyle(ui.ColorBlack, ui.ColorYellow)
 
 	// 创建基本统计信息区域
 	basicStats := widgets.NewParagraph()
@@ -325,7 +353,7 @@ func (s *Stats) StartConsoleDisplay(stopChan chan struct{}) {
 	requestsPlot := widgets.NewPlot()
 	requestsPlot.Title = "Requests Per Second"
 	requestsPlot.Data = make([][]float64, 1)
-	requestsPlot.Data[0] = []float64{0, 0} // 初始化为两个零点
+	requestsPlot.Data[0] = []float64{0, 0}
 	requestsPlot.LineColors = []ui.Color{ui.ColorYellow}
 	requestsPlot.BorderStyle.Fg = ui.ColorYellow
 	requestsPlot.AxesColor = ui.ColorWhite
@@ -344,12 +372,15 @@ func (s *Stats) StartConsoleDisplay(stopChan chan struct{}) {
 
 	// 初始化计数器和数据切片
 	lastTotal := atomic.LoadUint64(&s.TotalRequests)
-	tpsData := []float64{0, 0} // 初始化为两个零点
+	tpsData := []float64{0, 0}
 
 	// 创建事件处理通道
 	uiEvents := ui.PollEvents()
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
+
+	// 标记是否在显示详情
+	showingDetail := false
 
 	// 设置布局函数
 	updateUI := func() {
@@ -359,104 +390,121 @@ func (s *Stats) StartConsoleDisplay(stopChan chan struct{}) {
 		// 获取终端大小
 		width, height := ui.TerminalDimensions()
 
-		// 设置各个组件的位置和大小
-		title.SetRect(0, 0, width, 3)
-		basicStats.SetRect(0, 3, width/2, height/2)
-		requestsPlot.SetRect(width/2, 3, width, height/2)
-		errorStats.SetRect(0, height/2, width/2, height-3)
-		logView.SetRect(width/2, height/2, width, height-3)
-
-		// 更新统计数据
-		uptime := s.GetUptime()
-		totalReqs := atomic.LoadUint64(&s.TotalRequests)
-		successReqs := atomic.LoadUint64(&s.SuccessfulRequests)
-		failedReqs := atomic.LoadUint64(&s.FailedRequests)
-		bytesRecv := atomic.LoadUint64(&s.BytesReceived)
-		bytesSent := atomic.LoadUint64(&s.BytesSent)
-
-		// 计算 TPS
-		currentTPS := float64(totalReqs-lastTotal) / 1.0
-		lastTotal = totalReqs
-
-		// 更新图表数据，确保至少有两个点
-		if len(tpsData) < 2 {
-			tpsData = []float64{0, currentTPS}
+		if showingDetail {
+			// 显示详情模式
+			if len(clientKeys) > 0 {
+				selectedClient := clientKeys[clientList.SelectedRow]
+				clientDetail.Text = clientDetails[selectedClient]
+				// 居中显示详情
+				detailWidth := width * 2 / 3
+				detailHeight := 8
+				startX := (width - detailWidth) / 2
+				startY := (height - detailHeight) / 2
+				clientDetail.SetRect(startX, startY, startX+detailWidth, startY+detailHeight)
+				ui.Render(clientDetail)
+			}
 		} else {
-			tpsData = append(tpsData, currentTPS)
-			if len(tpsData) > 60 {
-				tpsData = tpsData[1:]
+			// 正常模式
+			// 根据客户端数量计算标题高度
+			titleHeight := len(s.Clients) + 2 // 标题行 + 客户端行数 + 边框
+			title.SetRect(0, 0, width, titleHeight)
+			basicStats.SetRect(0, titleHeight, width/2, (height+titleHeight)/2)
+			requestsPlot.SetRect(width/2, titleHeight, width, (height+titleHeight)/2)
+			errorStats.SetRect(0, (height+titleHeight)/2, width/2, height-3)
+			logView.SetRect(width/2, (height+titleHeight)/2, width, height-3)
+
+			// 更新统计数据
+			uptime := s.GetUptime()
+			totalReqs := atomic.LoadUint64(&s.TotalRequests)
+			successReqs := atomic.LoadUint64(&s.SuccessfulRequests)
+			failedReqs := atomic.LoadUint64(&s.FailedRequests)
+			bytesRecv := atomic.LoadUint64(&s.BytesReceived)
+			bytesSent := atomic.LoadUint64(&s.BytesSent)
+
+			// 计算 TPS
+			currentTPS := float64(totalReqs-lastTotal) / 1.0
+			lastTotal = totalReqs
+
+			// 更新图表数据，确保至少有两个点
+			if len(tpsData) < 2 {
+				tpsData = []float64{0, currentTPS}
+			} else {
+				tpsData = append(tpsData, currentTPS)
+				if len(tpsData) > 60 {
+					tpsData = tpsData[1:]
+				}
 			}
-		}
 
-		// 动态调整最大值
-		maxTPS := currentTPS
-		for _, v := range tpsData {
-			if v > maxTPS {
-				maxTPS = v
+			// 动态调整最大值
+			maxTPS := currentTPS
+			for _, v := range tpsData {
+				if v > maxTPS {
+					maxTPS = v
+				}
 			}
-		}
-		requestsPlot.MaxVal = maxTPS * 1.2 // 设置为最大值的 1.2 倍，留出一些空间
-		if requestsPlot.MaxVal < 10 {      // 设置最小值，避免图表太扁
-			requestsPlot.MaxVal = 10
-		}
-
-		requestsPlot.Data[0] = tpsData
-		requestsPlot.Title = fmt.Sprintf("Requests Per Second (Current: %.2f)", currentTPS)
-
-		// 计算成功率
-		successRate := float64(0)
-		if totalReqs > 0 {
-			successRate = float64(successReqs) / float64(totalReqs) * 100
-		}
-
-		// 更新基本统计信息
-		basicStats.Text = fmt.Sprintf(
-			"⏱️  Uptime: %s\n"+
-				"🔄 Total Requests: %d\n"+
-				"✅ Successful: %d\n"+
-				"❌ Failed: %d\n"+
-				"📥 Bytes Received: %s\n"+
-				"📤 Bytes Sent: %s\n"+
-				"📊 Success Rate: %.2f%%",
-			uptime.Round(time.Second),
-			totalReqs,
-			successReqs,
-			failedReqs,
-			formatBytes(bytesRecv),
-			formatBytes(bytesSent),
-			successRate,
-		)
-
-		// 更新错误统计信息
-		if failedReqs > 0 {
-			var errorText strings.Builder
-			errStats := s.GetErrorStats()
-			var codes []int
-			for code := range errStats {
-				codes = append(codes, code)
+			requestsPlot.MaxVal = maxTPS * 1.2 // 设置为最大值的 1.2 倍，留出一些空间
+			if requestsPlot.MaxVal < 10 {      // 设置最小值，避免图表太扁
+				requestsPlot.MaxVal = 10
 			}
-			sort.Ints(codes)
 
-			for _, code := range codes {
-				count := errStats[code]
-				percentage := float64(count) / float64(failedReqs) * 100
-				errorText.WriteString(fmt.Sprintf("%d %s\nCount: %d (%.2f%%)\n\n",
-					code,
-					getStatusCodeDesc(code),
-					count,
-					percentage,
-				))
+			requestsPlot.Data[0] = tpsData
+			requestsPlot.Title = fmt.Sprintf("Requests Per Second (Current: %.2f)", currentTPS)
+
+			// 计算成功率
+			successRate := float64(0)
+			if totalReqs > 0 {
+				successRate = float64(successReqs) / float64(totalReqs) * 100
 			}
-			errorStats.Text = errorText.String()
-		} else {
-			errorStats.Text = "No errors reported"
+
+			// 更新基本统计信息
+			basicStats.Text = fmt.Sprintf(
+				"⏱️  Uptime: %s\n"+
+					"🔄 Total Requests: %d\n"+
+					"✅ Successful: %d\n"+
+					"❌ Failed: %d\n"+
+					"📥 Bytes Received: %s\n"+
+					"📤 Bytes Sent: %s\n"+
+					"📊 Success Rate: %.2f%%",
+				uptime.Round(time.Second),
+				totalReqs,
+				successReqs,
+				failedReqs,
+				formatBytes(bytesRecv),
+				formatBytes(bytesSent),
+				successRate,
+			)
+
+			// 更新错误统计信息
+			if failedReqs > 0 {
+				var errorText strings.Builder
+				errStats := s.GetErrorStats()
+				var codes []int
+				for code := range errStats {
+					codes = append(codes, code)
+				}
+				sort.Ints(codes)
+
+				for _, code := range codes {
+					count := errStats[code]
+					percentage := float64(count) / float64(failedReqs) * 100
+					errorText.WriteString(fmt.Sprintf("%d %s\nCount: %d (%.2f%%)\n\n",
+						code,
+						getStatusCodeDesc(code),
+						count,
+						percentage,
+					))
+				}
+				errorStats.Text = errorText.String()
+			} else {
+				errorStats.Text = "No errors reported"
+			}
+
+			// 更新日志视图
+			logView.Text = logger.GetRecentLogs()
+
+			// 渲染所有组件
+			ui.Render(title, basicStats, requestsPlot, errorStats, logView)
 		}
-
-		// 更新日志视图
-		logView.Text = logger.GetRecentLogs()
-
-		// 渲染所有组件
-		ui.Render(title, basicStats, requestsPlot, errorStats, logView)
 	}
 
 	// 主事件循环
@@ -467,14 +515,16 @@ func (s *Stats) StartConsoleDisplay(stopChan chan struct{}) {
 			select {
 			case e := <-uiEvents:
 				switch e.ID {
+				case "<Enter>":
+					showingDetail = !showingDetail
 				case "<C-c>":
-					// 切换到普通模式
 					ui.Close()
 					uiActive = false
 					fmt.Println("\nCtrl+C to exit, any other key to return to stats.")
 				case "<Resize>":
 					updateUI()
 				}
+				updateUI()
 			case <-ticker.C:
 				updateUI()
 			case <-logUpdateChan:
