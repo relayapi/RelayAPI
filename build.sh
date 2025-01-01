@@ -105,6 +105,12 @@ for OS in "${SYSTEMS[@]}"; do
         cp config.json $PACKAGE_DIR/config.json
         cp default.rai $PACKAGE_DIR/default.rai
 
+        # For Linux systems, include the service file
+        if [ "$OS" = "linux" ]; then
+            cp ../relayapi.service.linux.sh $PACKAGE_DIR/
+            chmod +x $PACKAGE_DIR/relayapi.service.linux.sh
+        fi
+
         # Create package
         pushd ../$BUILD_DIR > /dev/null
         if ! tar -czf "../$RELEASE_DIR/$PACKAGE_NAME.tar.gz" $PACKAGE_NAME; then
