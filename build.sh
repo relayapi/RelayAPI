@@ -67,6 +67,16 @@ echo "🧹 Cleaning build directories..."
 rm -rf ../$BUILD_DIR ../$RELEASE_DIR
 mkdir -p ../$BUILD_DIR ../$RELEASE_DIR
 
+# 更新版本号
+echo "📝 Updating version number in main.go..."
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    # macOS
+    sed -i '' "s/const Version = \".*\"/const Version = \"$CURRENT_VERSION\"/" cmd/server/main.go
+else
+    # Linux
+    sed -i "s/const Version = \".*\"/const Version = \"$CURRENT_VERSION\"/" cmd/server/main.go
+fi
+
 # Build for different platforms
 for OS in "${SYSTEMS[@]}"; do
     for ARCH in "${ARCHITECTURES[@]}"; do

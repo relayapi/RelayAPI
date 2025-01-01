@@ -24,8 +24,13 @@ import (
 	"golang.org/x/time/rate"
 )
 
-var debugMode bool
-var logWriter io.Writer
+// Version 当前程序版本号
+const Version = "v0.0.0" // 这个值会在构建时被替换
+
+var (
+	debugMode bool
+	logWriter io.Writer
+)
 
 func setupLogging(debug bool) {
 	if debug {
@@ -126,7 +131,7 @@ func main() {
 
 	// 创建统计服务
 	serverAddr := fmt.Sprintf("%s:%d", cfg.Server.Server.Host, cfg.Server.Server.Port)
-	statsService := services.NewStats("1.0.0", serverAddr)
+	statsService := services.NewStats(Version, serverAddr)
 
 	// 启动统计信息显示
 	go statsService.StartConsoleDisplay(stopChan)
@@ -160,7 +165,7 @@ func main() {
 		c.JSON(http.StatusOK, gin.H{
 			"status":  "ok",
 			"time":    time.Now().Format(time.RFC3339),
-			"version": "1.0.0",
+			"version": Version,
 			"stats":   stats,
 		})
 	})
