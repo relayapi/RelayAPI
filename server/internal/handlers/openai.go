@@ -15,13 +15,15 @@ import (
 
 // APIHandler 处理 API 请求
 type APIHandler struct {
-	proxyService *services.ProxyService
+	proxyService   *services.ProxyService
+	tokenProcessor *TokenProcessor
 }
 
 // NewAPIHandler 创建新的 API 处理器
 func NewAPIHandler(proxyService *services.ProxyService) *APIHandler {
 	return &APIHandler{
-		proxyService: proxyService,
+		proxyService:   proxyService,
+		tokenProcessor: &TokenProcessor{},
 	}
 }
 
@@ -63,6 +65,16 @@ func (h *APIHandler) HandleRequest(c *gin.Context) {
 	tokenObj := token.(*models.Token)
 	apiKey := tokenObj.APIKey
 	provider := tokenObj.Provider
+
+	// 处理请求体，根据令牌的扩展信息进行修改
+	processedBody, err := h.tokenProcessor.ProcessRequestBody(tokenObj, body)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": fmt.Sprintf("Failed to process request body: %v", err),
+		})
+		return
+	}
+	body = processedBody
 
 	// 构建目标 URL
 	baseURL := h.getBaseURL(provider)

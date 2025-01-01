@@ -30,7 +30,8 @@ async function main() {
             apiKey: apiKey,
             maxCalls: 100,
             expireSeconds: 3600,
-            provider: 'dashscope'
+            provider: 'dashscope',
+            extInfo: '{"rep_m": "qwen-vl-max"}'
         });
 
         console.log('Token created:', token);
@@ -50,7 +51,7 @@ async function main() {
                 { role: 'system', content: 'You are a helpful assistant.' },
                 { role: 'user', content: 'What is the capital of France?' }
             ],
-            model: 'qwen-vl-max',
+            model: 'q',
             temperature: 0.7,
             maxTokens: 1000,
             token: token,
