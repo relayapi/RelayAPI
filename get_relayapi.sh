@@ -18,7 +18,7 @@ case $ARCH in
 esac
 
 # Version and download URL
-VERSION="v1.0.9"
+VERSION="v1.0.10"
 DOWNLOAD_URL="https://github.com/relayapi/RelayAPI/releases/download/${VERSION}/relayapi-${OS}-${ARCH}.tar.gz"
 
 # Default paths
