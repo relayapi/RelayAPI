@@ -3,8 +3,39 @@
 # Exit immediately if a command exits with a non-zero status
 set -e
 
-# Version number
-VERSION="v1.0.1"
+# Version file
+VERSION_FILE="version.txt"
+
+# Load current version from file or create if not exists
+if [ -f "$VERSION_FILE" ]; then
+    CURRENT_VERSION=$(cat "$VERSION_FILE")
+else
+    CURRENT_VERSION="v1.0.0"
+    echo $CURRENT_VERSION > "$VERSION_FILE"
+fi
+
+# Calculate next version (but don't write it yet)
+MAJOR=$(echo $CURRENT_VERSION | cut -d. -f1)
+MINOR=$(echo $CURRENT_VERSION | cut -d. -f2)
+PATCH=$(echo $CURRENT_VERSION | cut -d. -f3)
+PATCH=$((PATCH + 1))
+NEXT_VERSION="${MAJOR}.${MINOR}.${PATCH}"
+
+echo "📦 Current version: $CURRENT_VERSION"
+echo "🔄 Next version will be: $NEXT_VERSION"
+
+CURRENT_VERSION=$NEXT_VERSION
+
+# Load GitHub token from .env
+if [ ! -f ".env" ]; then
+    echo "❌ Error: .env file not found"
+    exit 1
+fi
+source .env
+if [ -z "$GITHUB_TOKEN" ]; then
+    echo "❌ Error: GITHUB_TOKEN not found in .env"
+    exit 1
+fi
 
 # Supported systems and architectures
 SYSTEMS=("linux" "darwin" "windows")
@@ -82,4 +113,52 @@ cd ..
 rm -rf $BUILD_DIR
 
 echo "🎉 All platform builds completed!"
-echo "📦 Release packages are in $RELEASE_DIR directory" 
+echo "📦 Release packages are in $RELEASE_DIR directory"
+
+# Create GitHub release
+echo "📤 Creating GitHub release for version $CURRENT_VERSION..."
+
+# Create git tag
+git tag $CURRENT_VERSION
+git push 
+
+# Create GitHub release
+RELEASE_NOTES="RelayAPI Release $CURRENT_VERSION"
+RELEASE_FILES=()
+for OS in "${SYSTEMS[@]}"; do
+    for ARCH in "${ARCHITECTURES[@]}"; do
+        RELEASE_FILES+=("$RELEASE_DIR/relayapi-${OS}-${ARCH}.tar.gz")
+    done
+done
+
+# Create release using GitHub API
+RELEASE_DATA="{\"tag_name\":\"$CURRENT_VERSION\",\"name\":\"Release $CURRENT_VERSION\",\"body\":\"$RELEASE_NOTES\",\"draft\":false,\"prerelease\":false}"
+RELEASE_RESPONSE=$(curl -X POST -H "Authorization: token $GITHUB_TOKEN" \
+    -H "Accept: application/vnd.github.v3+json" \
+    -d "$RELEASE_DATA" \
+    "https://api.github.com/repos/relayapi/RelayAPI/releases")
+
+# Get release ID from response
+RELEASE_ID=$(echo $RELEASE_RESPONSE | jq -r .id)
+
+# Upload release assets
+for FILE in "${RELEASE_FILES[@]}"; do
+    FILENAME=$(basename $FILE)
+    echo "Uploading $FILENAME..."
+    curl -X POST -H "Authorization: token $GITHUB_TOKEN" \
+        -H "Content-Type: application/octet-stream" \
+        --data-binary @"$FILE" \
+        "https://uploads.github.com/repos/relayapi/RelayAPI/releases/$RELEASE_ID/assets?name=$FILENAME"
+done
+
+# All steps completed successfully, now update version numbers
+echo "📝 Updating version numbers..."
+
+# Update version.txt with next version
+echo $NEXT_VERSION > "$VERSION_FILE"
+
+# Update version in get_relayapi.sh
+sed -i '' "s/VERSION=\".*\"/VERSION=\"$CURRENT_VERSION\"/" get_relayapi.sh
+
+echo "✨ Release $CURRENT_VERSION published successfully!"
+echo "🔄 Version updated to $NEXT_VERSION" 
