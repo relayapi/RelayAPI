@@ -25,7 +25,7 @@ import (
 )
 
 // Version 当前程序版本号
-const Version = "v1.0.8" // 这个值会在构建时被替换
+const Version = "v1.0.9" // 这个值会在构建时被替换
 
 var (
 	debugMode bool
