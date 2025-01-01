@@ -1,6 +1,7 @@
 package config
 
 import (
+	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -91,7 +92,26 @@ func (c *Config) GetClientConfig(hash string) (ClientConfig, bool) {
 }
 
 // DefaultClientConfig 创建默认的客户端配置
-func DefaultClientConfig() ClientConfig {
+func DefaultClientConfig(host string, port int) (ClientConfig, error) {
+	if host == "" {
+		host = "http://localhost"
+	}
+	if port == 0 {
+		port = 8840
+	}
+
+	// 生成随机的 AES 密钥 (32字节/256位)
+	aesKey := make([]byte, 32)
+	if _, err := rand.Read(aesKey); err != nil {
+		return ClientConfig{}, fmt.Errorf("failed to generate random AES key: %v", err)
+	}
+
+	// 生成随机的 IV seed (8字节/64位)
+	ivSeed := make([]byte, 8)
+	if _, err := rand.Read(ivSeed); err != nil {
+		return ClientConfig{}, fmt.Errorf("failed to generate random IV seed: %v", err)
+	}
+
 	return ClientConfig{
 		Version: "1.0.0",
 		Server: struct {
@@ -99,8 +119,8 @@ func DefaultClientConfig() ClientConfig {
 			Port     int    `json:"port"`
 			BasePath string `json:"base_path"`
 		}{
-			Host:     "http://localhost",
-			Port:     8840,
+			Host:     host,
+			Port:     port,
 			BasePath: "/relayapi/",
 		},
 		Crypto: struct {
@@ -109,10 +129,10 @@ func DefaultClientConfig() ClientConfig {
 			AESIVSeed string `json:"aes_iv_seed"`
 		}{
 			Method:    "aes",
-			AESKey:    "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
-			AESIVSeed: "fedcba9876543210",
+			AESKey:    hex.EncodeToString(aesKey),
+			AESIVSeed: hex.EncodeToString(ivSeed),
 		},
-	}
+	}, nil
 }
 
 // LoadConfig 加载配置
@@ -128,13 +148,6 @@ func LoadConfig(serverConfigPath string, clientConfigPath string) (*Config, erro
 	}
 	if err := json.Unmarshal(serverData, &config.Server); err != nil {
 		return nil, fmt.Errorf("failed to parse server config: %v", err)
-	}
-
-	// 如果客户端配置路径为空，加载默认配置
-	if clientConfigPath == "" {
-		defaultCfg := DefaultClientConfig()
-		config.AddClientConfig(defaultCfg)
-		return config, nil
 	}
 
 	// 检查是否是目录

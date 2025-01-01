@@ -179,4 +179,75 @@ The auto-generated configuration will use secure random values for encryption ke
 For more specific configuration examples and use cases, please refer to:
 - [Server Configuration Guide](../server/README.md)
 - [JavaScript SDK Guide](../backend-sdk/JavaScript/README.md)
-- [Python SDK Guide](../backend-sdk/python/README.md) 
+- [Python SDK Guide](../backend-sdk/python/README.md)
+
+## Generating Client Configuration
+
+You can use the `relayapi-server` command-line tool to generate client configuration files. The tool provides several options for generating configurations with different settings.
+
+### Basic Usage
+
+1. Generate with default settings (localhost:8840):
+```bash
+relayapi-server --gen=
+```
+
+2. Generate with custom host and port:
+```bash
+relayapi-server --gen=example.com:8080
+```
+
+3. Generate with custom host only (uses default port 8840):
+```bash
+relayapi-server --gen=example.com
+```
+
+4. View help information:
+```bash
+relayapi-server --gen=help
+```
+
+### Saving Configuration
+
+To save the generated configuration to a file, use redirection:
+
+```bash
+relayapi-server --gen= > config.rai
+# or with custom settings
+relayapi-server --gen=example.com:8080 > config.rai
+```
+
+### Configuration Format
+
+The generated configuration file will be in JSON format with the following structure:
+
+```json
+{
+    "version": "1.0.0",
+    "server": {
+        "host": "http://localhost",
+        "port": 8840,
+        "base_path": "/relayapi/"
+    },
+    "crypto": {
+        "method": "aes",
+        "aes_key": "<randomly generated 256-bit key>",
+        "aes_iv_seed": "<randomly generated 64-bit IV seed>"
+    }
+}
+```
+
+### Security Notes
+
+- The AES key and IV seed are randomly generated each time you create a configuration
+- The key is 256-bit (32 bytes) for maximum security
+- The IV seed is 64-bit (8 bytes)
+- Each configuration gets a unique key pair
+- Store the configuration file securely as it contains sensitive cryptographic material
+
+### Tips
+
+- Always use the `=` sign when specifying the `--gen` parameter
+- The host parameter can be a domain name or IP address
+- The port must be a valid number between 1 and 65535
+- Use quotes if your host contains special characters: `--gen="my.host.com:8080"` 

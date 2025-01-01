@@ -18,6 +18,7 @@ import (
 	"relayapi/server/internal/middleware"
 	"relayapi/server/internal/middleware/logger"
 	"relayapi/server/internal/services"
+	"relayapi/server/internal/utils"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/time/rate"
@@ -52,11 +53,26 @@ func setupLogging(debug bool) {
 
 func main() {
 	// 解析命令行参数
+	var genConfig string
 	serverConfig := flag.String("config", "config.json", "服务器配置文件路径")
-	clientConfig := flag.String("rai", "", "客户端配置文件路径或目录 (.rai)")
+	clientConfig := flag.String("rai", "default.rai", "客户端配置文件路径或目录 (.rai)")
+	flag.StringVar(&genConfig, "gen", "", "生成客户端配置 (格式: [host:port] 或 help)")
 	flag.BoolVar(&debugMode, "debug", false, "启用调试日志输出到debug.log")
 	flag.BoolVar(&debugMode, "d", false, "启用调试日志输出到debug.log (简写)")
+
+	// 自定义 Usage
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[0])
+		flag.PrintDefaults()
+		fmt.Fprintf(os.Stderr, "\n使用 --gen help 查看配置生成的详细说明\n")
+	}
+
 	flag.Parse()
+
+	// 检查是否有 --gen 标志
+	if isFlagPassed("gen") {
+		utils.OnceCMDGenerateClientConfig(genConfig)
+	}
 
 	// 设置日志
 	setupLogging(debugMode)
@@ -217,4 +233,15 @@ func main() {
 	}
 
 	fmt.Println("✅ Server stopped gracefully")
+}
+
+// isFlagPassed 检查命令行参数是否被传递
+func isFlagPassed(name string) bool {
+	found := false
+	flag.Visit(func(f *flag.Flag) {
+		if f.Name == name {
+			found = true
+		}
+	})
+	return found
 }

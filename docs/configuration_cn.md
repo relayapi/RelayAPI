@@ -180,4 +180,76 @@ const client = new RelayAPIClient({
 - [服务器配置指南](../server/README.md)
 - [JavaScript SDK 指南](../backend-sdk/JavaScript/README.md)
 - [Python SDK 指南](../backend-sdk/python/README.md)
+
+## 生成客户端配置
+
+您可以使用 `relayapi-server` 命令行工具生成客户端配置文件。该工具提供了多种选项来生成不同设置的配置。
+
+### 基本用法
+
+1. 使用默认设置生成（localhost:8840）：
+```bash
+relayapi-server --gen=
+```
+
+2. 使用自定义主机和端口生成：
+```bash
+relayapi-server --gen=example.com:8080
+```
+
+3. 仅使用自定义主机生成（使用默认端口 8840）：
+```bash
+relayapi-server --gen=example.com
+```
+
+4. 查看帮助信息：
+```bash
+relayapi-server --gen=help
+```
+
+### 保存配置
+
+要将生成的配置保存到文件，请使用重定向：
+
+```bash
+relayapi-server --gen= > config.rai
+# 或使用自定义设置
+relayapi-server --gen=example.com:8080 > config.rai
+```
+
+### 配置格式
+
+生成的配置文件将采用 JSON 格式，结构如下：
+
+```json
+{
+    "version": "1.0.0",
+    "server": {
+        "host": "http://localhost",
+        "port": 8840,
+        "base_path": "/relayapi/"
+    },
+    "crypto": {
+        "method": "aes",
+        "aes_key": "<随机生成的256位密钥>",
+        "aes_iv_seed": "<随机生成的64位IV种子>"
+    }
+}
+```
+
+### 安全说明
+
+- AES 密钥和 IV 种子在每次创建配置时都会随机生成
+- 密钥为 256 位（32 字节），提供最高级别的安全性
+- IV 种子为 64 位（8 字节）
+- 每个配置都会获得唯一的密钥对
+- 由于配置文件包含敏感的加密材料，请安全地存储配置文件
+
+### 使用提示
+
+- 指定 `--gen` 参数时始终使用 `=` 符号
+- host 参数可以是域名或 IP 地址
+- 端口必须是 1 到 65535 之间的有效数字
+- 如果主机包含特殊字符，请使用引号：`--gen="my.host.com:8080"`
+- 生成的配置文件建议使用 `.rai` 扩展名
 ``` 
